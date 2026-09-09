@@ -5,6 +5,7 @@ const { z } = require('zod');
 const masterPrisma = require('../../config/masterDb');
 const { REGIONS } = require('../../data/uzbekistanRegions');
 const { PLAN_PRICES } = require('../../services/provisioning');
+const { notInternal } = require('../../utils/internal');
 
 const applicationSchema = z.object({
   name: z.string().min(2, 'Restoran/kafe nomi kamida 2 belgi'),
@@ -84,7 +85,9 @@ async function searchPlaces(req, res, next) {
     const type = req.query.type === 'cafe' || req.query.type === 'restaurant' ? req.query.type : null;
     const term = String(req.query.q || '').trim().slice(0, 60);
 
-    const where = { subscriptionStatus: { in: ['trial', 'active', 'suspended'] } };
+    // `notInternal` — o'z-o'zini tekshirish uchun yaratilgan vaqtinchalik
+    // muassasa qidiruvda hech qachon ko'rinmasligi kerak
+    const where = { ...notInternal, subscriptionStatus: { in: ['trial', 'active', 'suspended'] } };
     if (type) where.businessType = type;
     if (term) where.name = { contains: term, mode: 'insensitive' };
 
@@ -105,7 +108,7 @@ async function searchPlaces(req, res, next) {
 async function publicStats(req, res, next) {
   try {
     const restaurantCount = await masterPrisma.restaurant.count({
-      where: { subscriptionStatus: { in: ['trial', 'active'] } },
+      where: { ...notInternal, subscriptionStatus: { in: ['trial', 'active'] } },
     });
     res.json({ restaurantCount });
   } catch (err) {

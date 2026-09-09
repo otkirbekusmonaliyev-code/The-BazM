@@ -5,6 +5,7 @@ const masterPrisma = require('../../config/masterDb');
 const { getTenantClient, invalidateTenantClient } = require('../../config/tenantDb');
 const { refreshBot, stopBot } = require('../../bot/botManager');
 const provisioning = require('../../services/provisioning');
+const { notInternal, isInternalSlug } = require('../../utils/internal');
 
 const loginSchema = z.object({
   phone: z.string().min(9),
@@ -56,7 +57,9 @@ async function listRestaurants(req, res, next) {
   try {
     // ?type=restaurant | cafe — Super Admin panelidagi ikki alohida bo'lim
     const { type } = req.query;
-    const where = type === 'cafe' || type === 'restaurant' ? { businessType: type } : {};
+    // Ichki sinov muassasasi panelda ko'rinmaydi — u haqiqiy mijoz emas
+    const where = { ...notInternal };
+    if (type === 'cafe' || type === 'restaurant') where.businessType = type;
 
     const restaurants = await masterPrisma.restaurant.findMany({
       where,
@@ -76,7 +79,9 @@ async function getRestaurant(req, res, next) {
       where: { id: req.params.id },
       select: { ...RESTAURANT_FIELDS, dbName: true, dbHost: true, billingHistory: true },
     });
-    if (!restaurant) {
+    // Ichki sinov muassasasi ro'yxatda yo'q — to'g'ridan-to'g'ri ID bilan
+    // ham ochilmasin, aks holda panelda "arvoh" yozuv paydo bo'ladi
+    if (!restaurant || isInternalSlug(restaurant.slug)) {
       return res.status(404).json({ error: 'Restoran topilmadi' });
     }
 
@@ -228,6 +233,7 @@ async function getStats(req, res, next) {
   try {
     const [all, applications] = await Promise.all([
       masterPrisma.restaurant.findMany({
+        where: notInternal,
         select: { id: true, name: true, subscriptionStatus: true, monthlyFee: true, businessType: true },
       }),
       masterPrisma.restaurantApplication.count({ where: { status: 'pending' } }),

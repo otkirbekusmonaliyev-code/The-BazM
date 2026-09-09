@@ -1,6 +1,7 @@
 import './globals.css';
 import './effects.css';
 import './wave.css';
+import './site.css';
 import SceneCanvas from '@/components/SceneCanvas';
 import SiteFx from '@/components/SiteFx';
 import PageTransition from '@/components/PageTransition';

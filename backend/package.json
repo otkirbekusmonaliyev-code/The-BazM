@@ -17,6 +17,8 @@
     "test:flow": "node scripts/smokeTest.js",
     "test:edge": "node scripts/smokeTest2.js",
     "test:bot": "node scripts/botTest.js",
+    "test:full": "node scripts/fullTest.js",
+    "test:self": "node scripts/selfTestOnce.js",
     "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js",
     "set-password": "node scripts/setPassword.js",
     "reset": "node scripts/resetPlatform.js"

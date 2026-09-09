@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const controller = require('./superAdmin.controller');
+const { loginLimiters } = require('../../middleware/loginLimiter');
 const requireSuperAdmin = require('../../middleware/requireSuperAdmin');
 
 // Ochiq — login uchun
-router.post('/login', controller.login);
+// Platforma egasining hisobi — parol tanlashdan albatta himoyalanishi kerak
+router.post('/login', loginLimiters, controller.login);
 
 // Bundan keyingilari faqat super_admin token bilan
 router.use(requireSuperAdmin);

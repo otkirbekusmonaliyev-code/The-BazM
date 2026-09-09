@@ -1,0 +1,280 @@
+/* ============================================================
+   SAYT USTQURMASI — kuchaytirilgan shisha va chuqurlik
+   globals.css, effects.css va wave.css dan KEYIN yuklanadi.
+   ============================================================ */
+
+/* ============================================================
+   TEPA PANEL — suzuvchi shisha lavha
+   ============================================================ */
+
+/* Tepada turganda panel deyarli ko'rinmas: 3D sahna to'siqsiz ochiladi.
+   Siljigach u yuqori chekkadan uzilib, suzuvchi lavhaga aylanadi —
+   ostidagi tarkib chetlaridan o'tib turgani ko'rinadi. */
+.header {
+  transition:
+    background 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    backdrop-filter 0.45s ease,
+    -webkit-backdrop-filter 0.45s ease,
+    box-shadow 0.45s ease,
+    padding 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.header.scrolled {
+  padding: 10px 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Siljiganda shisha aynan shu ichki qatlamga ko'chadi */
+.header.scrolled .header-inner {
+  position: relative;
+  height: 58px;
+  padding: 0 20px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  backdrop-filter: blur(30px) saturate(190%);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 18px 44px rgba(0, 0, 0, 0.34);
+}
+
+:root[data-theme='light'] .header.scrolled .header-inner {
+  background: color-mix(in srgb, #ffffff 68%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 16px 38px rgba(40, 38, 24, 0.12);
+}
+
+/* Lavhaning qirrasi bo'ylab o'tuvchi yorug'lik */
+.header.scrolled .header-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.14),
+    transparent 34%,
+    transparent 68%,
+    color-mix(in srgb, var(--gold) 14%, transparent)
+  );
+}
+
+:root[data-theme='light'] .header.scrolled .header-inner::before {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.85),
+    transparent 38%,
+    transparent 70%,
+    color-mix(in srgb, var(--gold) 9%, transparent)
+  );
+}
+
+/* Suzuvchi holatda pastdagi oltin chiziq keraksiz */
+.header.scrolled::after {
+  opacity: 0;
+}
+
+.header-inner > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Panel ostida sahifa "yo'qolib boradi" — kesilgan chekka ko'rinmasin */
+.header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 34px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 55%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.header.scrolled::before {
+  opacity: 1;
+}
+
+/* ============================================================
+   BO'LIMLAR — chuqurroq shisha
+   ============================================================ */
+
+/* Tarif kartalari: qirrada yorug'lik va sichqoncha ostida ko'tarilish */
+.plan {
+  position: relative;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease,
+    border-color 0.35s ease;
+}
+
+.plan:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+:root[data-theme='light'] .plan:hover {
+  box-shadow:
+    0 24px 52px rgba(40, 38, 24, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Mashhur tarif — tepasida oltin chiziq */
+.plan.popular::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* Qadamlar: raqam ostida yumshoq shisha maydoncha */
+.step {
+  position: relative;
+  padding: 22px 20px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card) 42%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease;
+}
+
+.step:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+}
+
+:root[data-theme='light'] .step {
+  background: color-mix(in srgb, #ffffff 55%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.step-icon {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.step:hover .step-icon {
+  transform: scale(1.12) rotate(-5deg);
+}
+
+/* Ishonch raqamlari — oltin gradient */
+.trust-number {
+  background: linear-gradient(150deg, var(--text), color-mix(in srgb, var(--gold) 75%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Savol-javob: ochilganda oltin chekka */
+.faq-item {
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.faq-item:hover {
+  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+/* Bo'limlar orasidagi ajratgich — o'rtasida yorug' oltin chiziq */
+.section + .section::before,
+.section + .section-alt::before,
+.section-alt + .section::before {
+  content: '';
+  display: block;
+  height: 1px;
+  max-width: 1100px;
+  margin: 0 auto;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--gold) 30%, transparent) 30%,
+    color-mix(in srgb, var(--gold) 30%, transparent) 70%,
+    transparent
+  );
+  opacity: 0.4;
+}
+
+/* Yakuniy chaqiriq — yumshoq oltin yorug'lik ichida */
+.cta-final {
+  position: relative;
+  isolation: isolate;
+}
+
+.cta-final::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(760px, 90%);
+  aspect-ratio: 2 / 1;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--gold) 18%, transparent), transparent 68%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+/* Pastki qism — yuqorisida nozik chegara */
+.footer {
+  position: relative;
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--gold) 35%, transparent) 25%,
+    color-mix(in srgb, var(--gold) 35%, transparent) 75%,
+    transparent
+  );
+  opacity: 0.5;
+}
+
+/* ============================================================
+   HARAKAT KAMAYTIRILGAN REJIM
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .header-inner,
+  .plan,
+  .step,
+  .step-icon {
+    transition: none;
+  }
+  .plan:hover,
+  .step:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .header.scrolled .header-inner {
+    padding: 0 14px;
+    border-radius: 15px;
+  }
+  .header.scrolled {
+    padding: 8px 0;
+  }
+}

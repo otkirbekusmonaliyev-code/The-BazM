@@ -1,17 +1,11 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const controller = require('./login.controller');
+const { loginLimiters } = require('../../middleware/loginLimiter');
 
-// Login — parol tanlashga urinishlardan himoya uchun alohida, qattiqroq chegara
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Juda ko\'p urinish. 15 daqiqadan keyin qayta urinib ko\'ring.' },
-});
-
-router.post('/', loginLimiter, controller.login);
+// Yagona kirish nuqtasi. Parol tanlashdan himoya `loginLimiter` da —
+// u hisob va IP bo'yicha alohida sanaydi va faqat MUVAFFAQIYATSIZ
+// urinishlarni hisobga oladi.
+router.post('/', loginLimiters, controller.login);
 
 module.exports = router;
