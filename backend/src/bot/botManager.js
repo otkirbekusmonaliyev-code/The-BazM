@@ -100,6 +100,56 @@ async function startBots() {
   session.startSweeper();
 }
 
+// Bitta muassasa uchun botni ISHLAB TURGAN serverda ko'tarish/to'xtatish.
+//
+// Avval botlar faqat server ishga tushganda ko'tarilardi: panelda yangi
+// restoran yaratilsa yoki bot tokeni almashtirilsa, u serverni qayta ishga
+// tushirmaguncha jim turardi. Endi o'zgarish darhol kuchga kiradi.
+async function refreshBot(slug) {
+  if (!slug) return;
+
+  // Eskisini to'xtatamiz — token o'zgargan bo'lishi mumkin
+  stopBot(slug);
+
+  try {
+    const restaurant = await masterPrisma.restaurant.findUnique({
+      where: { slug },
+      select: { slug: true, name: true, telegramBotToken: true, subscriptionStatus: true },
+    });
+
+    if (!restaurant) return;
+    // To'xtatilgan obunada bot ishlamaydi
+    if (!['trial', 'active'].includes(restaurant.subscriptionStatus)) return;
+
+    let token = (restaurant.telegramBotToken || '').trim();
+
+    // O'z tokeni bo'lmasa — development uchun .env dagi token.
+    // `startBots` da ham xuddi shunday, shu bilan yangi yaratilgan
+    // sinov restorani ham darhol bot bilan ishlaydi.
+    if (!token && slug === (process.env.TELEGRAM_DEV_SLUG || '').trim()) {
+      token = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
+    }
+
+    if (!token) return;
+
+    await launchOne({ token, slug: restaurant.slug, name: restaurant.name });
+  } catch (err) {
+    console.error(`   [bot:${slug}] yangilanmadi: ${err.message}`);
+  }
+}
+
+function stopBot(slug) {
+  const bot = running.get(slug);
+  if (!bot) return;
+  try {
+    bot.stop('refresh');
+  } catch (_) {
+    /* allaqachon to'xtagan bo'lishi mumkin */
+  }
+  running.delete(slug);
+  clearBotUsername(slug);
+}
+
 function stopBots(signal) {
   for (const [slug, bot] of running) {
     try {
@@ -113,4 +163,4 @@ function stopBots(signal) {
   session.stopSweeper();
 }
 
-module.exports = { startBots, stopBots };
+module.exports = { startBots, stopBots, refreshBot, stopBot };

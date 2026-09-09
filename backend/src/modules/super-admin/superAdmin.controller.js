@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const masterPrisma = require('../../config/masterDb');
 const { getTenantClient, invalidateTenantClient } = require('../../config/tenantDb');
+const { refreshBot, stopBot } = require('../../bot/botManager');
 const provisioning = require('../../services/provisioning');
 
 const loginSchema = z.object({
@@ -129,6 +130,8 @@ async function createRestaurant(req, res, next) {
   try {
     const input = createRestaurantSchema.parse(req.body);
     const { restaurant, adminCredentials } = await provisioning.provisionRestaurant(input);
+    // Bot tokeni berilgan bo'lsa — serverni qayta ishga tushirmasdan ko'tariladi
+    refreshBot(restaurant.slug);
     res.status(201).json({ restaurant, adminCredentials });
   } catch (err) {
     if (err.name === 'ZodError') {
@@ -148,6 +151,8 @@ async function suspendRestaurant(req, res, next) {
       data: { subscriptionStatus: 'suspended' },
       select: RESTAURANT_FIELDS,
     });
+    // Obuna to'xtatilgan — boti ham javob bermasligi kerak
+    stopBot(restaurant.slug);
     // Keshdagi ulanishni ham yopamiz — aks holda suspend qilingan restoran
     // keshlangan client orqali ishlashda davom etardi
     invalidateTenantClient(restaurant.slug);
@@ -166,6 +171,7 @@ async function activateRestaurant(req, res, next) {
       select: RESTAURANT_FIELDS,
     });
     invalidateTenantClient(restaurant.slug);
+    refreshBot(restaurant.slug);
     res.json(restaurant);
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Restoran topilmadi' });
@@ -194,6 +200,8 @@ async function updateRestaurant(req, res, next) {
       select: RESTAURANT_FIELDS,
     });
     invalidateTenantClient(restaurant.slug);
+    // Bot tokeni almashtirilgan bo'lishi mumkin — botni qayta ko'taramiz
+    refreshBot(restaurant.slug);
     res.json(restaurant);
   } catch (err) {
     if (err.name === 'ZodError') {

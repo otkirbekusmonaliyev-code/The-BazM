@@ -245,6 +245,9 @@ async function deleteRestaurant(id) {
     throw err;
   }
   invalidateTenantClient(restaurant.slug);
+  // Muassasa o'chirilmoqda — uning boti ham to'xtashi kerak
+  // eslint-disable-next-line global-require
+  require('../bot/botManager').stopBot(restaurant.slug);
   // Global xodim indeksida bu restoranning yozuvlari qolib ketmasin —
   // aks holda o'chirilgan restoran xodimi login qilishga urinaverardi
   await staffDirectory.removeByRestaurant(restaurant.slug);
