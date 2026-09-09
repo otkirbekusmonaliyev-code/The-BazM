@@ -18,7 +18,8 @@
     "test:edge": "node scripts/smokeTest2.js",
     "test:bot": "node scripts/botTest.js",
     "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js",
-    "set-password": "node scripts/setPassword.js"
+    "set-password": "node scripts/setPassword.js",
+    "reset": "node scripts/resetPlatform.js"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",

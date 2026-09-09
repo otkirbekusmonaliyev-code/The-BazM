@@ -19,6 +19,7 @@ export default function TablesPage({ api, slug, liveTick }) {
   const [qrTable, setQrTable] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [qrInfo, setQrInfo] = useState(null);
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -35,6 +36,21 @@ export default function TablesPage({ api, slug, liveTick }) {
   useEffect(() => {
     load();
   }, [load, liveTick]);
+
+  // QR kodlardagi manzil mijozning telefoniga yetib boradimi — buni
+  // admin oldindan bilishi kerak, chop etib sinab ko'rgandan keyin emas
+  useEffect(() => {
+    let alive = true;
+    api
+      .get('/tables/admin/qr-info')
+      .then((info) => alive && setQrInfo(info))
+      .catch(() => {
+        /* ma'lumot kelmasa ham sahifa ishlayveradi */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [api]);
 
   async function release(table) {
     try {
@@ -203,6 +219,7 @@ export default function TablesPage({ api, slug, liveTick }) {
 
       <QrModal
         api={api}
+        qrInfo={qrInfo}
         table={qrTable}
         onClose={() => setQrTable(null)}
         onRegenerated={() => {
@@ -216,7 +233,7 @@ export default function TablesPage({ api, slug, liveTick }) {
 
 // ---------- QR oynasi: ko'rish, yuklab olish, qayta yaratish ----------
 
-function QrModal({ api, table, onClose, onRegenerated }) {
+function QrModal({ api, qrInfo, table, onClose, onRegenerated }) {
   const [url, setUrl] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
@@ -326,6 +343,8 @@ function QrModal({ api, table, onClose, onRegenerated }) {
 
             <div className="qr-link">{table.qrUrl}</div>
 
+            {qrInfo && <QrReach info={qrInfo} />}
+
             <p style={{ fontSize: 13, marginTop: 12, lineHeight: 1.6, textAlign: 'left' }}>
               Bu kodni chop etib stol ustiga qo‘ying. Mijoz skanerlaganda to‘g‘ridan-to‘g‘ri
               shu stolning menyusi ochiladi. Katta bosma uchun SVG ni tanlang — u istalgan
@@ -366,6 +385,47 @@ function QrModal({ api, table, onClose, onRegenerated }) {
         </>
       )}
     </Modal>
+  );
+}
+
+// QR kod ichida oddiy havola turadi va mijozning TELEFONI uni ochadi.
+// Shuning uchun manzil telefon yeta oladigan bo'lishi shart.
+function QrReach({ info }) {
+  if (info.kind === 'public') {
+    return (
+      <div className="qr-reach ok">
+        <b>✓ Bu QR har qanday telefonda ishlaydi</b>
+        <span>
+          Manzil ochiq internetda{info.https ? ' va https bilan himoyalangan' : ''}.
+          {!info.https && ' Telegram Mini App uchun https kerak bo‘ladi.'}
+        </span>
+      </div>
+    );
+  }
+
+  if (info.kind === 'lan') {
+    return (
+      <div className="qr-reach warn">
+        <b>⚠ Bu QR faqat shu Wi-Fi ichida ishlaydi</b>
+        <span>
+          Manzil — kompyuteringizning tarmoqdagi raqami ({info.baseUrl}). Restoran
+          ichida, bir xil Wi-Fi'ga ulangan telefonlar ochadi. Mijoz mobil internetda
+          bo‘lsa ochilmaydi — buning uchun domen kerak.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="qr-reach bad">
+      <b>✗ Bu QR telefonda OCHILMAYDI</b>
+      <span>
+        Manzil <span className="mono">localhost</span> — bu har bir qurilma uchun
+        o‘zini bildiradi, shuning uchun mijozning telefoni hech narsa topmaydi.
+        Serverning <span className="mono">.env</span> faylida{' '}
+        <span className="mono">APP_URL</span> ni haqiqiy manzilga o‘zgartiring.
+      </span>
+    </div>
   );
 }
 

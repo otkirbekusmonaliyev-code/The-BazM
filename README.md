@@ -138,15 +138,31 @@ Ochish: <http://localhost:5173> (panellar), <http://localhost:3001> (sayt).
 Login sahifalarida **`+998` doimiy prefiks** sifatida maydon ichida turadi —
 faqat 9 ta raqamni terasiz (masalan `94 109 33 50`).
 
+Yangi o'rnatilgan platformada **faqat bitta hisob** bo'ladi — platforma
+egasi. Restoranlar, kafelar va ularning xodimlari shu paneldan yaratiladi.
+
 | Rol | Telefon (terilishi) | Parol | Manzil |
 |---|---|---|---|
-| Super Admin | `94 109 33 50` | `admin!!@@` | `/super-admin` |
-| Restoran admin | `90 111 22 33` | `admin123` | `/delish/admin` |
-| Oshpaz | `90 777 88 99` | `oshpaz123` | `/delish/kitchen` |
-| Ofitsiant (Malika) | `90 999 88 77` | `ofitsiant123` | `/delish/waiter` |
-| Ofitsiant (Jasur) | `90 999 88 66` | `ofitsiant123` | `/delish/waiter` |
-| Ofitsiant (Nodira) | `90 999 88 55` | `ofitsiant123` | `/delish/waiter` |
-| Mijoz | parol yo'q — QR yoki bot orqali | — | `/t/delish/<qrToken>` yoki `/m/delish` |
+| Super Admin | `94 109 33 50` | o'rnatishda belgilanadi | `/super-admin` |
+
+Sinov muassasasi kerak bo'lsa (avtomatik sinovlar unga tayanadi):
+
+```bash
+cd backend
+npm run provision -- --name "Delish" --slug delish   --adminPhone +998901112233 --adminPassword admin123
+npm run seed -- --slug delish
+```
+
+Bu buyruq oshpaz va uchta ofitsiant bilan to'liq sinov restoranini yaratadi;
+parollar konsolga chiqadi.
+
+Platformani boshlang'ich holatga qaytarish (BARCHA muassasalar bazasi bilan
+o'chadi, faqat bitta super admin qoladi):
+
+```bash
+npm run reset            # faqat ko'rsatadi
+npm run reset -- --yes   # haqiqatan o'chiradi
+```
 
 Butun platformada **bitta kirish sahifasi** bor — `/`. Alohida "xodim
 kirishi" sahifasi yo'q va rol tanlanmaydi: telefon raqami kimga tegishli
@@ -253,6 +269,37 @@ qoplanadi.
 `src/jobs/tableReleaseJob.js` har daqiqada barcha restoranlarni tekshiradi:
 15 daqiqadan beri band, lekin **hech qanday faol buyurtmasi yo'q** stollarni
 avtomatik bo'shatadi va real-time xabar yuboradi.
+
+### QR kod qayerga olib boradi
+
+QR kod ichida oddiy havola turadi va uni **mijozning telefoni** ochadi.
+Demak manzil telefon yeta oladigan bo'lishi shart. `localhost` — bu har bir
+qurilma uchun o'zini bildiradi, shuning uchun localhost'li QR hech qachon
+ishlamaydi.
+
+Uch daraja bor va server holatni admin panelida (stol QR oynasida) o'zi
+aytadi:
+
+| Daraja | Manzil | Kim ochadi |
+|---|---|---|
+| `local` | `localhost:5173` | faqat shu kompyuter — QR ishlamaydi |
+| `lan` | `192.168.x.x:5173` | bir xil Wi-Fi'dagi telefonlar |
+| `public` | `https://sizning-domen.uz` | har qanday internet |
+
+`APP_URL` localhost bo'lsa, server uni **avtomatik ravishda kompyuterning
+tarmoq manzili bilan almashtiradi** — shu bilan QR kodlar hech qanday
+qo'shimcha sozlashsiz, restoran Wi-Fi'sida darhol ishlaydi. Domen olgach
+`APP_URL` ni o'zgartirasiz.
+
+Vaqtinchalik ochiq manzil kerak bo'lsa (masalan Telegram Mini App'ni sinash
+uchun) — `QR_BASE_URL` ni tunnel manziliga qo'ying:
+
+```bash
+ngrok http 5173
+# so'ng .env ga:  QR_BASE_URL=https://xxxx.ngrok-free.app
+```
+
+---
 
 ### Telegram bot
 

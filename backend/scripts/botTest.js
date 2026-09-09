@@ -9,6 +9,7 @@
 //   node scripts/botTest.js
 
 require('dotenv').config();
+const { requireTenant } = require('./lib/requireTenant');
 const { Telegram } = require('telegraf');
 const { createRestaurantBot } = require('../src/bot/restaurantBot');
 const { getTenantClient } = require('../src/config/tenantDb');
@@ -120,6 +121,8 @@ const firstLine = (s) => (s || '').split('\n')[0];
 const btn = (screen, data) => screen.buttons.find((b) => b.data === data);
 
 async function main() {
+  await requireTenant(SLUG);
+
   console.log(`\n=== Telegram bot sinovi (${SLUG}) ===\n`);
 
   try {

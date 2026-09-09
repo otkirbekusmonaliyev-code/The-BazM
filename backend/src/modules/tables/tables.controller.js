@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { z } = require('zod');
-const { tableUrl } = require('../../utils/links');
+const { tableUrl, appUrlInfo } = require('../../utils/links');
 const realtime = require('../../realtime/io');
 const { CLOSED_STATUSES } = require('../../utils/orderStatus');
 
@@ -178,6 +178,15 @@ async function listTableQrCodes(req, res, next) {
   }
 }
 
+// QR kodlardagi manzil mijozning telefoniga yetib boradimi?
+//
+// Admin buni BILISHI kerak: localhost'li QR hech qachon ishlamaydi, lekin
+// buni faqat kodni chop etib, telefonda skanerlab ko'rgandagina bilardi.
+// Endi panelning o'zi aytadi.
+async function getQrInfo(req, res) {
+  res.json(appUrlInfo());
+}
+
 // QR tokenni qaytadan yaratish — eski chop etilgan kod ishlamay qoladi.
 // Kod tarqab ketgan yoki stol boshqa joyga ko'chirilgan bo'lsa kerak bo'ladi.
 async function regenerateTableQr(req, res, next) {
@@ -254,6 +263,7 @@ module.exports = {
   listTables,
   getTableQrImage,
   listTableQrCodes,
+  getQrInfo,
   regenerateTableQr,
   releaseTable,
   deleteTable,

@@ -5,6 +5,7 @@
 // Server ishlab turgan holda:  node scripts/smokeTest.js
 
 require('dotenv').config();
+const { requireTenant } = require('./lib/requireTenant');
 const { io } = require('socket.io-client');
 
 const BASE = `http://127.0.0.1:${process.env.PORT || 4000}`;
@@ -54,6 +55,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const seen = (label, event) => events.some((e) => e.label === label && e.event === event);
 
 async function main() {
+  await requireTenant(SLUG);
+
   console.log(`\n=== Bazm uchdan-uchgacha sinov (${SLUG}) ===\n`);
 
   console.log('1) Xodimlar login qilmoqda');

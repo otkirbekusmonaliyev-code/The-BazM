@@ -8,6 +8,8 @@
 // Server ishlab turgan holda:  node scripts/smokeTest2.js
 
 require('dotenv').config();
+const bcrypt = require('bcrypt');
+const { requireTenant } = require('./lib/requireTenant');
 const masterPrisma = require('../src/config/masterDb');
 const { getTenantClient, invalidateTenantClient } = require('../src/config/tenantDb');
 const { releaseIdleTablesFor, IDLE_MINUTES } = require('../src/jobs/tableReleaseJob');
@@ -42,6 +44,8 @@ async function req(path, { method = 'GET', body, token, slug = SLUG } = {}) {
 }
 
 async function main() {
+  await requireTenant(SLUG);
+
   console.log('\n=== Chekka holatlar sinovi ===\n');
 
   const db = await getTenantClient(SLUG);
@@ -186,12 +190,31 @@ async function main() {
 
   // ---------- 5) Obuna to'xtatilganda ----------
   console.log('\n5) Obuna to\'xtatilganda kirish bloklanadi');
+  // Sinov O'Z super adminini yaratadi va oxirida o'chiradi.
+  //
+  // Avval bu yerda seed'dagi qat'iy raqam va parol yozilgan edi — platforma
+  // tozalanganda o'sha hisob yo'qolib, sinovlar tushunarsiz yiqilardi.
+  // Bundan tashqari haqiqiy egasining parolini sinov faylida saqlash
+  // (u GitHub'da turadi) to'g'ri emas.
+  const TEST_SUPER_PHONE = '+998000000001';
+  const TEST_SUPER_PASS = `sinov${Date.now()}`;
+  await masterPrisma.superAdmin.upsert({
+    where: { phone: TEST_SUPER_PHONE },
+    update: { passwordHash: await bcrypt.hash(TEST_SUPER_PASS, 10) },
+    create: {
+      phone: TEST_SUPER_PHONE,
+      fullName: 'Sinov super admin',
+      passwordHash: await bcrypt.hash(TEST_SUPER_PASS, 10),
+    },
+  });
+
   const superLogin = await req('/super-admin/login', {
     method: 'POST',
-    body: { phone: '+998900000000', password: 'super123' },
+    body: { phone: TEST_SUPER_PHONE, password: TEST_SUPER_PASS },
     slug: '',
   });
-  const superToken = superLogin.data.token;
+  const superToken = superLogin.data && superLogin.data.token;
+  check('sinov super admini kirdi', !!superToken, superLogin.data && superLogin.data.error);
   const restaurantRow = await masterPrisma.restaurant.findUnique({ where: { slug: SLUG } });
 
   await req(`/super-admin/restaurants/${restaurantRow.id}/suspend`, { method: 'PATCH', token: superToken });
@@ -320,6 +343,9 @@ async function main() {
 
   // Sinov xodimini o'chirib qo'yamiz — ro'yxatni chulg'amasin
   await db.user.deleteMany({ where: { phone: testPhone } });
+
+  // Sinov super adminini ham ortidan tozalaymiz
+  await masterPrisma.superAdmin.deleteMany({ where: { phone: TEST_SUPER_PHONE } });
 
   console.log(`\n=== Natija: ${failures === 0 ? 'HAMMASI O\'TDI ✔' : `${failures} ta xato ✘`} ===\n`);
   process.exit(failures === 0 ? 0 : 1);
