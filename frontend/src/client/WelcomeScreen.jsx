@@ -89,6 +89,13 @@ export default function WelcomeScreen({ mode, slug, placeName, session, onStart,
         <div className="c-welcome-mark">Xush kelibsiz</div>
         <div className="c-welcome-sub">{placeName || slug}</div>
 
+        {mode === 'demo' && (
+          <p style={{ margin: '0 0 22px', fontSize: 13.5, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.65 }}>
+            Bu — mijoz ko'radigan ilovaning namunasi. Ismingizni yozing va
+            menyuni xuddi stolda o'tirgandek ko'rib chiqing.
+          </p>
+        )}
+
         {error && <div className="c-error-box" style={{ margin: '0 0 16px' }}>{error}</div>}
 
         {mode === 'picker' && (
@@ -142,8 +149,9 @@ export default function WelcomeScreen({ mode, slug, placeName, session, onStart,
         </button>
 
         <p style={{ marginTop: 18, fontSize: 12.5, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.6 }}>
-          Ismingiz faqat buyurtmangizni ajratish uchun kerak — ofitsiant sizni
-          shu nom bilan chaqiradi.
+          {mode === 'demo'
+            ? 'Namunada hech narsa saqlanmaydi va hech kimga yuborilmaydi.'
+            : 'Ismingiz faqat buyurtmangizni ajratish uchun kerak — ofitsiant sizni shu nom bilan chaqiradi.'}
         </p>
       </form>
     </div>

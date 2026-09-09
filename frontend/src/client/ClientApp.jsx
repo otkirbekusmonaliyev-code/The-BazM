@@ -9,23 +9,36 @@ import WelcomeScreen from './WelcomeScreen';
 import MenuScreen from './MenuScreen';
 import CartScreen from './CartScreen';
 import TrackScreen from './TrackScreen';
+import DemoBanner from './DemoBanner';
+import { DEMO_MENU, DEMO_PLACE, DEMO_FLOW } from './demoData';
 
 // Mijoz ilovasi (Telegram Mini App).
 //
-// Ikki xil kirish:
+// Uch xil kirish:
 //   mode="qr"     — /t/:slug/:qrToken — stol ustidagi QR skanerlangan
 //   mode="picker" — /m/:slug          — bot orqali, stolni o'zi tanlaydi
 //                   (bot allaqachon stolni band qilgan bo'lsa, token
 //                    query'da keladi va ism so'ralmaydi)
+//   mode="demo"   — /demo             — NAMUNA. Serverga bitta ham so'rov
+//                   ketmaydi, hech qanday haqiqiy muassasa ochilmaydi.
+//                   Ro'yxatdan o'tmagan odam ilovani shu yerda ko'radi.
+//
+// Namuna rejimida ekranlar HAQIQIYSINING O'ZI — faqat ma'lumot manbasi
+// boshqa. Shu sababli demo har doim ilovaning haqiqiy holatini ko'rsatadi:
+// menyu ekranini o'zgartirsak, demo ham o'zi bilan o'zgaradi.
 
 export default function ClientApp({ mode }) {
-  const { slug, qrToken } = useParams();
+  const { slug: routeSlug, qrToken } = useParams();
+  const demo = mode === 'demo';
+  const slug = demo ? DEMO_PLACE.slug : routeSlug;
   const [query] = useSearchParams();
-  const [session, setSession] = useState(() => clientAuth.get(slug));
+  // Namuna sessiyasi saqlanmaydi: har safar kirgan odam ilovani boshidan,
+  // kirish ekranidan ko'rsin
+  const [session, setSession] = useState(() => (demo ? null : clientAuth.get(slug)));
   const [screen, setScreen] = useState('welcome');
   const [direction, setDirection] = useState('right');
-  const [menu, setMenu] = useState(null);
-  const [place, setPlace] = useState(null);
+  const [menu, setMenu] = useState(demo ? DEMO_MENU : null);
+  const [place, setPlace] = useState(demo ? DEMO_PLACE : null);
   const [cart, setCart] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
   const [pastOrders, setPastOrders] = useState([]);
@@ -45,15 +58,30 @@ export default function ClientApp({ mode }) {
     toast.error('Sessiya tugadi, qaytadan kiriting');
   }, [slug, toast]);
 
-  const api = useMemo(
-    () =>
-      createClient({
-        getToken: () => (clientAuth.get(slug) || {}).token,
-        getSlug: () => slug,
-        onUnauthorized: clearSession,
-      }),
-    [slug, clearSession]
-  );
+  // Namuna rejimida server yo'q: ilova chaqiradigan har bir amal shu yerda
+  // taqlid qilinadi. Shu bilan ekranlarga birorta ham `if (demo)` shart
+  // qo'shilmaydi — ular baribir "api" bilan gaplashadi.
+  const api = useMemo(() => {
+    if (demo) {
+      return {
+        get: async () => [],
+        post: async () => ({}),
+        patch: async (path) => {
+          if (/\/cancel$/.test(path)) setActiveOrder((o) => (o ? { ...o, status: 'cancelled' } : o));
+          return {};
+        },
+        del: async () => ({}),
+        blob: async () => null,
+        upload: async () => ({}),
+        raw: async () => ({}),
+      };
+    }
+    return createClient({
+      getToken: () => (clientAuth.get(slug) || {}).token,
+      getSlug: () => slug,
+      onUnauthorized: clearSession,
+    });
+  }, [demo, slug, clearSession]);
 
   // Telegram Mini App ichida bo'lsak — to'liq ekranga o'tamiz
   useEffect(() => {
@@ -85,8 +113,9 @@ export default function ClientApp({ mode }) {
     }
   }, [mode, query, session, slug]);
 
-  // Menyuni yuklash
+  // Menyuni yuklash (namunada u allaqachon xotirada)
   const loadMenu = useCallback(async () => {
+    if (demo) return;
     try {
       setMenu(await request('/menu', { slug }));
     } catch (err) {
@@ -94,7 +123,7 @@ export default function ClientApp({ mode }) {
       else if (err.status === 404) setFatalError('Restoran topilmadi');
       else setFatalError(err.message);
     }
-  }, [slug]);
+  }, [demo, slug]);
 
   useEffect(() => {
     loadMenu();
@@ -102,6 +131,7 @@ export default function ClientApp({ mode }) {
 
   // Muassasa nomi — sarlavhada slug ("delish") emas, haqiqiy nom tursin
   useEffect(() => {
+    if (demo) return undefined;
     let alive = true;
     request('/client/place', { slug })
       .then((data) => alive && setPlace(data))
@@ -111,7 +141,7 @@ export default function ClientApp({ mode }) {
     return () => {
       alive = false;
     };
-  }, [slug]);
+  }, [demo, slug]);
 
   // Sessiya bor bo'lsa — mavjud buyurtmalarni tiklaymiz.
   //
@@ -119,6 +149,7 @@ export default function ClientApp({ mode }) {
   // buyurtma uchun menyuni ko'rib turganda aloqa uzilib-ulansa, uni kuzatuv
   // ekraniga majburan tortib ketardi.
   const loadOrders = useCallback(async () => {
+    if (demo) return;
     if (!clientAuth.get(slug)) return;
     try {
       const orders = await api.get('/client/orders');
@@ -134,7 +165,7 @@ export default function ClientApp({ mode }) {
     } catch (_) {
       /* 401 bo'lsa onUnauthorized allaqachon sessiyani tozalaydi */
     }
-  }, [api, slug]);
+  }, [api, demo, slug]);
 
   useEffect(() => {
     if (session) loadOrders();
@@ -182,6 +213,15 @@ export default function ClientApp({ mode }) {
   }, []);
 
   async function startSession(clientName, tableId) {
+    if (demo) {
+      // Namunada stol "7" — bironta ham haqiqiy stol band qilinmaydi
+      const data = { token: null, table: { id: 'demo-table', tableNumber: 7 }, clientName };
+      setSession(data);
+      initialRouteDone.current = true;
+      go('menu', 'right');
+      return data;
+    }
+
     const data =
       mode === 'qr'
         ? await request('/client/session', { method: 'POST', slug, body: { qrToken, clientName } })
@@ -193,7 +233,50 @@ export default function ClientApp({ mode }) {
     return data;
   }
 
+  // Namuna buyurtmasi: oshxona va ofitsiant o'rniga taymer "bosadi", shunda
+  // odam kuzatuv ekranining butun yo'lini — qabuldan yetkazishgacha — ko'radi
+  const demoTimers = useRef([]);
+  useEffect(() => () => demoTimers.current.forEach(clearTimeout), []);
+
+  function startDemoFlow(order) {
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+    let delay = 0;
+    for (const step of DEMO_FLOW) {
+      delay += step.afterMs;
+      demoTimers.current.push(
+        setTimeout(() => {
+          const next = { ...order, status: step.status };
+          setActiveOrder((current) => (current && current.id === order.id ? next : current));
+          setPastOrders((list) => list.map((o) => (o.id === order.id ? next : o)));
+        }, delay)
+      );
+    }
+  }
+
   async function submitOrder() {
+    if (demo) {
+      const order = {
+        id: `demo-${Date.now()}`,
+        status: 'new',
+        createdAt: new Date().toISOString(),
+        totalPrice: cart.reduce((sum, c) => sum + c.price * c.quantity, 0),
+        items: cart.map((c, i) => ({
+          id: `demo-line-${i}`,
+          quantity: c.quantity,
+          note: c.note || null,
+          priceAtOrderTime: c.price,
+          menuItem: { name: c.name },
+        })),
+      };
+      setCart([]);
+      setActiveOrder(order);
+      setPastOrders((list) => [order, ...list]);
+      startDemoFlow(order);
+      go('track', 'right');
+      return order;
+    }
+
     const order = await api.post('/client/orders', {
       items: cart.map((c) => ({
         menuItemId: c.menuItemId,
@@ -274,6 +357,9 @@ export default function ClientApp({ mode }) {
           onBackToMenu={() => go('menu', 'left')}
         />
       )}
+
+      {/* Eng oxirida: shunda savat paneli chiqqanda CSS uni ko'tara oladi */}
+      {demo && <DemoBanner />}
     </div>
   );
 }

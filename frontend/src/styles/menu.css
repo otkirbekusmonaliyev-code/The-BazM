@@ -72,6 +72,18 @@
 .dish-plate-md .dish-plate-letter { font-size: 30px; }
 .dish-plate-hero .dish-plate-letter { font-size: 76px; }
 
+/* Namuna menyudagi emoji — harf bilan bir xil o'lchamda, lekin soyasiz
+   (emoji o'zi rangli, matn soyasi uni loyqalantiradi) */
+.dish-plate-emoji {
+  position: relative;
+  line-height: 1;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+}
+
+.dish-plate-row .dish-plate-emoji { font-size: 46px; }
+.dish-plate-md .dish-plate-emoji { font-size: 32px; }
+.dish-plate-hero .dish-plate-emoji { font-size: 84px; }
+
 /* Ustidan o'tuvchi yorug'lik — "yaltiroq likobcha" hissi */
 .dish-plate-sheen {
   position: absolute;
@@ -441,4 +453,96 @@
     padding: 0 16px 0 13px;
     font-size: 14px;
   }
+}
+
+/* ============================================================
+   NAMUNA BELGISI (/demo)
+   ============================================================
+   Ekran bilan aylanmaydi, lekin bosilganda kichrayadi — menyuni
+   to'sib qolmasligi kerak. */
+
+.c-demo-badge {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 28px);
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  background: color-mix(in srgb, var(--panel, #1a1814) 78%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.42);
+  transition: padding 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s ease;
+}
+
+.c-demo-badge:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
+.c-demo-badge.small {
+  padding: 8px 14px;
+}
+
+.c-demo-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 60%, transparent);
+  animation: demoPulse 2.4s ease-out infinite;
+}
+
+@keyframes demoPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 55%, transparent); }
+  70% { box-shadow: 0 0 0 9px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.c-demo-full {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.c-demo-full b {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.c-demo-full span {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.c-demo-short {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+}
+
+/* Savat paneli chiqqanda belgi uning ustiga ko'chsin */
+.c-screen.has-cart ~ .c-demo-badge {
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-demo-dot { animation: none; }
+  .c-demo-badge { transition: none; }
 }

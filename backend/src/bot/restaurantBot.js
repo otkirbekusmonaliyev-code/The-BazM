@@ -11,11 +11,26 @@
 //      berilar edi va mijoz bo'sh ekranga tushib qolardi).
 //   2) Oddiy /start — to'liq menyu.
 //
+// RO'YXATDAN O'TISH. Ish boshlashdan oldin bot mijozdan kontaktini so'raydi
+// (Telegram'ning o'z tugmasi bilan — qo'lda terish yo'q). Uch qoida:
+//
+//   1) Boshi berk ko'cha bo'lmaydi. Raqam bermagan odam ham NAMUNA menyuni
+//      ko'ra oladi — ya'ni "nima olishimni bilmasdan raqamimni beraymi?"
+//      degan holat yuzaga kelmaydi.
+//   2) Rad etsa — sabab tushuntiriladi, so'ng yana taklif qilinadi. Bot
+//      hech qachon jim qolmaydi.
+//   3) QR kod bilan kelgan odam yo'qotilmaydi: kod eslab qolinadi va
+//      ro'yxatdan o'tgach u to'g'ri o'z stoliga tushadi.
+//
+// Namuna menyu HAQIQIY muassasaga tegmaydi — u /demo sahifasi bo'lib,
+// serverga bitta ham so'rov yubormaydi (qarang: frontend/src/client/demoData.js).
+//
 // Suhbat holati `session.js` da, matnlar `texts.js` da (o'zbekcha/ruscha).
 
 const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
-const { tableWebUrl, tablePickerUrl } = require('../utils/links');
+const { tableWebUrl, tablePickerUrl, demoUrl } = require('../utils/links');
+const botCustomers = require('../services/botCustomers');
 const session = require('./session');
 const { t, pickLang } = require('./texts');
 
@@ -115,8 +130,8 @@ function openButton(label, url) {
 }
 
 // Havolani tugma qilib bo'lmasa, uni matnga qo'shamiz — mijoz ochiq qoladi
-function withLink(c, text, url) {
-  const button = openButton(c.openMenu, url);
+function withLink(c, text, url, label) {
+  const button = openButton(label || c.openMenu, url);
   if (button) return { text, rows: [[button]] };
   return { text: `${text}
 
@@ -194,8 +209,105 @@ function createRestaurantBot({ token, slug, name }) {
   async function goHome(ctx, prefix) {
     const { s, c } = ctxOf(ctx);
     s.draft = null;
+    // Ro'yxatdan o'tmagan odamga menyuni ko'rsatib, so'ng har bir tugmada
+    // "avval raqam bering" deyish — bu ochiq masxara. Bir marta so'raymiz.
+    if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
     const head = prefix ? `${prefix}\n\n` : '';
     return show(ctx, `${head}${c.whatNext}`, mainMenu(c, s));
+  }
+
+  // ============================================================
+  //  RO'YXATDAN O'TISH
+  // ============================================================
+
+  // Kontakt so'raladigan klaviatura. Uchala tugma ham SHU YERDA, chunki
+  // reply-klaviatura bilan inline-tugmalarni bitta xabarga qo'shib
+  // bo'lmaydi — aks holda "namuna" va "nega kerak" alohida xabar talab
+  // qilar va suhbat chalkashardi.
+  const authKeyboard = (c) =>
+    Markup.keyboard([
+      [Markup.button.contactRequest(c.auth.shareBtn)],
+      [c.auth.demoBtn, c.auth.whyBtn],
+    ])
+      .resize()
+      .persistent();
+
+  async function askRegistration(ctx, c, prefix) {
+    return ctx.reply(prefix ? `${prefix}\n\n${c.auth.ask}` : c.auth.ask, authKeyboard(c));
+  }
+
+  // Ro'yxatdan o'tganmi? Javob sessiyada keshlanadi — har bosishda
+  // bazaga bormaydi.
+  //
+  // Baza javob bermasa RUXSAT BERAMIZ. Sababi: `telegramCustomer` jadvali
+  // hali yoyilmagan bo'lsa (yangi muassasa, `npm run tenant:sync` qilinmagan)
+  // qattiq to'sish botni butunlay o'lik qilardi va mijoz hech qachon
+  // ro'yxatdan ham o'ta olmasdi — ya'ni abadiy halqa. Ochiq qolish esa eng
+  // yomon holatda faqat ro'yxatga olishni yo'qotadi, xizmatni emas.
+  async function currentCustomer(ctx) {
+    const s = session.get(ctx);
+    if (s.customer !== undefined) return s.customer;
+    try {
+      s.customer = await botCustomers.find(slug, ctx.from.id);
+    } catch (err) {
+      console.error(`   [bot:${slug}] mijozlar jadvali o'qilmadi: ${err.message}`);
+      s.customer = { degraded: true };
+    }
+    return s.customer;
+  }
+
+  // Amaldan oldin qo'yiladigan to'siq. `true` — davom etsa bo'ladi.
+  async function requireRegistration(ctx, c) {
+    const customer = await currentCustomer(ctx);
+    if (customer) return true;
+    if (ctx.updateType === 'callback_query') {
+      await ctx.answerCbQuery();
+      await show(ctx, c.auth.needed);
+    }
+    await askRegistration(ctx, c);
+    return false;
+  }
+
+  // Ro'yxatdan o'tgandan keyin qayerga borish: QR kod bilan kelgan bo'lsa
+  // — o'sha stolga, aks holda asosiy menyuga
+  async function afterRegistration(ctx, c, s, greeting) {
+    const pending = s.pendingQr;
+    s.pendingQr = null;
+
+    const head = greeting ? `${greeting}\n\n` : '';
+
+    if (pending) {
+      try {
+        const table = await api(slug, `/client/tables/by-qr/${encodeURIComponent(pending)}`);
+        s.table = { id: table.id, number: table.tableNumber, token: null };
+        const link = withLink(c, `${head}${c.qr.valid(table.tableNumber)}`, tableWebUrl(slug, pending));
+        return ctx.reply(
+          link.text,
+          Markup.inlineKeyboard([...link.rows, [Markup.button.callback(c.menu.back, 'home')]])
+        );
+      } catch (err) {
+        // Kod eskirgan yoki boshqa muassasaniki — sababini aytamiz va
+        // odamni oddiy menyuga olib chiqamiz, boshi berk ko'chada emas
+        return ctx.reply(
+          `${head}${err.offline ? c.errors.offline : c.qr.invalid}`,
+          mainMenu(c, s)
+        );
+      }
+    }
+
+    return ctx.reply(`${head}${c.whatNext}`, mainMenu(c, s));
+  }
+
+  // Namuna menyu — ro'yxatdan o'tmasdan ham ochiladi
+  async function sendDemo(ctx, c) {
+    const link = withLink(c, c.demo.intro, demoUrl(), c.openDemo);
+    const registered = !!(await currentCustomer(ctx));
+    const rows = [...link.rows];
+    if (registered) rows.push([Markup.button.callback(c.menu.back, 'home')]);
+    return ctx.reply(
+      registered ? link.text : `${link.text}\n\n${c.demo.after}`,
+      rows.length ? Markup.inlineKeyboard(rows) : undefined
+    );
   }
 
   // ---------- /start ----------
@@ -204,29 +316,9 @@ function createRestaurantBot({ token, slug, name }) {
     s.draft = null;
     const payload = (ctx.startPayload || '').trim();
 
-    // QR kod orqali kelgan: t_<qrToken>
-    if (payload.startsWith('t_')) {
-      const qrToken = payload.slice(2);
-      try {
-        const table = await api(slug, `/client/tables/by-qr/${encodeURIComponent(qrToken)}`);
-        s.table = { id: table.id, number: table.tableNumber, token: null };
-        const link = withLink(
-          c,
-          `${c.welcome(name)}\n\n${c.qr.valid(table.tableNumber)}`,
-          tableWebUrl(slug, qrToken)
-        );
-        return ctx.reply(
-          link.text,
-          Markup.inlineKeyboard([...link.rows, [Markup.button.callback(c.menu.back, 'home')]])
-        );
-      } catch (err) {
-        // Yaroqsiz QR — mijozni boshi berk ko'chada qoldirmaymiz
-        return ctx.reply(
-          `${c.welcome(name)}\n\n${err.offline ? c.errors.offline : c.qr.invalid}`,
-          mainMenu(c, s)
-        );
-      }
-    }
+    // QR kod orqali kelgan: t_<qrToken>.
+    // Kodni DARHOL eslab qolamiz — ro'yxatdan o'tish oralig'ida yo'qolmasin.
+    if (payload.startsWith('t_')) s.pendingQr = payload.slice(2);
 
     // Til hali bir marta ham tanlanmagan bo'lsa — avval shuni so'raymiz
     if (!s.langChosen) {
@@ -239,12 +331,46 @@ function createRestaurantBot({ token, slug, name }) {
       );
     }
 
-    return ctx.reply(`${c.welcome(name)}\n\n${c.whatNext}`, mainMenu(c, s));
+    return startOrAsk(ctx, c, s);
+  });
+
+  // Til tanlangandan keyin ham, /start dan keyin ham shu yerga tushamiz
+  async function startOrAsk(ctx, c, s) {
+    const customer = await currentCustomer(ctx);
+    if (!customer) return askRegistration(ctx, c, c.welcome(name));
+
+    const greeting = customer.firstName
+      ? c.auth.back(customer.firstName)
+      : c.welcome(name);
+    return afterRegistration(ctx, c, s, greeting);
+  }
+
+  bot.command('demo', async (ctx) => {
+    const { c } = ctxOf(ctx);
+    return sendDemo(ctx, c);
+  });
+
+  // Raqamni o'chirish. Va'da berilgan narsa bajarilishi kerak: matnda
+  // "/stop yozib o'chirtirishingiz mumkin" deyilgan.
+  bot.command('stop', async (ctx) => {
+    const { s, c } = ctxOf(ctx);
+    try {
+      await botCustomers.remove(slug, ctx.from.id);
+    } catch (err) {
+      console.error(`   [bot:${slug}] mijoz o'chirilmadi: ${err.message}`);
+    }
+    s.customer = undefined;
+    s.table = null;
+    s.draft = null;
+    await ctx.reply(c.auth.removed, Markup.removeKeyboard());
+    return askRegistration(ctx, c);
   });
 
   bot.command('menu', (ctx) => goHome(ctx));
   bot.command('help', async (ctx) => {
     const { s, c } = ctxOf(ctx);
+    // Ro'yxatdan o'tmaganga ishlaydigan tugmalar emas, keyingi qadam kerak
+    if (!(await currentCustomer(ctx))) return askRegistration(ctx, c, c.help);
     return ctx.reply(c.help, mainMenu(c, s));
   });
 
@@ -253,6 +379,7 @@ function createRestaurantBot({ token, slug, name }) {
     const { s, c } = ctxOf(ctx);
     const had = !!s.draft;
     s.draft = null;
+    if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
     return ctx.reply(
       had ? `${c.reserve.cancelled}\n\n${c.whatNext}` : c.whatNext,
       mainMenu(c, s)
@@ -293,13 +420,27 @@ function createRestaurantBot({ token, slug, name }) {
     s.lang = ctx.match[1];
     s.langChosen = true;
     const c = t(s.lang);
+
+    const customer = await currentCustomer(ctx);
+    if (!customer) {
+      // Til tanlash xabarini yopamiz va ro'yxatdan o'tishga o'tamiz.
+      // Kontakt tugmasi reply-klaviaturada, ya'ni ALOHIDA xabar kerak.
+      await show(ctx, c.langSet);
+      return askRegistration(ctx, c);
+    }
+
+    // Til tanlovi keyingi safar ham eslansin
+    botCustomers.setLang(slug, ctx.from.id, s.lang).catch(() => {});
+    if (s.customer && s.customer.lang) s.customer.lang = s.lang;
+
     return show(ctx, `${c.langSet}\n\n${c.whatNext}`, mainMenu(c, s));
   });
 
   // ---------- Menyuni ko'rish ----------
   bot.action('menu', async (ctx) => {
-    await ctx.answerCbQuery();
     const { s, c } = ctxOf(ctx);
+    if (!(await requireRegistration(ctx, c))) return null;
+    await ctx.answerCbQuery();
     try {
       const categories = await api(slug, '/menu');
       if (!categories || categories.length === 0) {
@@ -343,8 +484,9 @@ function createRestaurantBot({ token, slug, name }) {
 
   // ---------- Bo'sh stolni tanlash ----------
   bot.action('pick_table', async (ctx) => {
-    await ctx.answerCbQuery();
     const { s, c } = ctxOf(ctx);
+    if (!(await requireRegistration(ctx, c))) return null;
+    await ctx.answerCbQuery();
     try {
       const tables = await api(slug, '/client/tables/available');
       if (!tables.length) {
@@ -424,8 +566,9 @@ function createRestaurantBot({ token, slug, name }) {
   // bo'lsa — o'sha stol bilan ochiladi, bo'lmasa ilovaning o'zi stol
   // tanlashni so'raydi.
   bot.action('open_app', async (ctx) => {
-    await ctx.answerCbQuery();
     const { s, c } = ctxOf(ctx);
+    if (!(await requireRegistration(ctx, c))) return null;
+    await ctx.answerCbQuery();
 
     const url =
       s.table && s.table.token
@@ -513,8 +656,9 @@ function createRestaurantBot({ token, slug, name }) {
   // ============================================================
 
   bot.action('reserve', async (ctx) => {
-    await ctx.answerCbQuery();
     const { s, c } = ctxOf(ctx);
+    if (!(await requireRegistration(ctx, c))) return null;
+    await ctx.answerCbQuery();
     s.draft = { step: 'name' };
 
     const rows = [];
@@ -541,9 +685,21 @@ function createRestaurantBot({ token, slug, name }) {
       .resize();
   }
 
-  async function askPhone(ctx, c, name) {
-    await show(ctx, `${c.fields.name}  ${name}`);
+  // Ro'yxatdan o'tishda raqam allaqachon olingan — bron qilayotgan odamdan
+  // uni QAYTA so'ramaymiz. Aynan shu narsa ro'yxatdan o'tishning mijoz
+  // uchun ko'rinadigan foydasi.
+  async function askPhone(ctx, c, clientName) {
+    await show(ctx, `${c.fields.name}  ${clientName}`);
     const s = session.get(ctx);
+    const customer = await currentCustomer(ctx);
+
+    if (customer && customer.phone) {
+      s.draft.phone = customer.phone;
+      s.draft.step = 'party';
+      await ctx.reply(`${c.fields.phone}  ${customer.phone}`);
+      return ctx.reply(c.reserve.askParty, partyKeyboard(c));
+    }
+
     s.draft.step = 'phone';
     return ctx.reply(c.reserve.askPhone, phoneKeyboard(c));
   }
@@ -715,14 +871,44 @@ function createRestaurantBot({ token, slug, name }) {
   // ---------- Kontakt ulashildi ----------
   bot.on(message('contact'), async (ctx) => {
     const { s, c } = ctxOf(ctx);
-    if (!s.draft || s.draft.step !== 'phone') {
-      return ctx.reply(c.whatNext, mainMenu(c, s));
+    const contact = ctx.message.contact;
+
+    // BEGONA KONTAKT. Telegram'da istalgan odamning kontaktini yuborish
+    // mumkin, shuning uchun `user_id` ni tekshiramiz: u faqat O'Z kontaktini
+    // yuborganda o'zining ID'siga teng bo'ladi. Bu tekshiruvsiz kimdir
+    // boshqa odamning raqami bilan ro'yxatdan o'tib ketardi.
+    const isOwn = contact.user_id && String(contact.user_id) === String(ctx.from.id);
+
+    // Bron oqimi ichida — eski xatti-harakat saqlanadi
+    if (s.draft && s.draft.step === 'phone') {
+      s.draft.phone = contact.phone_number;
+      s.draft.step = 'party';
+      await ctx.reply(`${c.fields.phone} ${s.draft.phone}`, Markup.removeKeyboard());
+      return ctx.reply(c.reserve.askParty, partyKeyboard(c));
     }
-    s.draft.phone = ctx.message.contact.phone_number;
-    s.draft.step = 'party';
-    // Kontakt tugmasi klaviaturasini olib tashlaymiz
-    await ctx.reply(`${c.fields.phone} ${s.draft.phone}`, Markup.removeKeyboard());
-    return ctx.reply(c.reserve.askParty, partyKeyboard(c));
+
+    if (!isOwn) {
+      return ctx.reply(c.auth.notYours, authKeyboard(c));
+    }
+
+    // Ro'yxatdan o'tkazamiz
+    try {
+      s.customer = await botCustomers.register(slug, {
+        telegramId: ctx.from.id,
+        phone: contact.phone_number,
+        firstName: contact.first_name || ctx.from.first_name || null,
+        username: ctx.from.username || null,
+        lang: s.lang,
+      });
+    } catch (err) {
+      console.error(`   [bot:${slug}] ro'yxatga olinmadi: ${err.message}`);
+      return ctx.reply(c.errors.generic, authKeyboard(c));
+    }
+
+    // Kontakt klaviaturasi endi keraksiz — olib tashlaymiz, aks holda u
+    // suhbat ostida turib olardi
+    await ctx.reply(c.auth.done(s.customer.firstName), Markup.removeKeyboard());
+    return afterRegistration(ctx, c, s, null);
   });
 
   // ---------- Matnli javoblar ----------
@@ -730,6 +916,25 @@ function createRestaurantBot({ token, slug, name }) {
     const { s, c } = ctxOf(ctx);
     const draft = s.draft;
     const text = (ctx.message.text || '').trim();
+
+    // ---- Hali ro'yxatdan o'tmagan ----
+    //
+    // Bu yerda odam faqat uch narsa qila oladi: namunani ko'rish, sababni
+    // so'rash yoki raqamini yuborish. Boshqa har qanday matnga bot JIM
+    // QOLMAYDI — nima kutayotganini qayta aytadi.
+    if (!(await currentCustomer(ctx))) {
+      if (text === c.auth.demoBtn) return sendDemo(ctx, c);
+      if (text === c.auth.whyBtn) return ctx.reply(c.auth.why, authKeyboard(c));
+
+      // Raqamni qo'lda yozgan bo'lsa — nega tugma kerakligini aytamiz
+      if (/^[+0-9\s()-]{7,20}$/.test(text)) {
+        return ctx.reply(c.auth.typed, authKeyboard(c));
+      }
+      return askRegistration(ctx, c);
+    }
+
+    // Ro'yxatdan o'tgan odam ham namunani ko'rmoqchi bo'lishi mumkin
+    if (text === c.auth.demoBtn) return sendDemo(ctx, c);
 
     // Hech qanday oqim yo'q — buyruq bo'lmagan har qanday matnga menyu
     if (!draft) {
@@ -739,8 +944,7 @@ function createRestaurantBot({ token, slug, name }) {
     if (draft.step === 'name') {
       if (text.length < 2 || text.length > 60) return ctx.reply(c.reserve.start);
       draft.clientName = text;
-      draft.step = 'phone';
-      return ctx.reply(c.reserve.askPhone, phoneKeyboard(c));
+      return askPhone(ctx, c, text);
     }
 
     if (draft.step === 'phone') {
@@ -799,6 +1003,7 @@ function createRestaurantBot({ token, slug, name }) {
   // Boshqa turdagi xabarlar (rasm, stiker, ovoz) — jimgina menyuga qaytaramiz
   bot.on('message', async (ctx) => {
     const { s, c } = ctxOf(ctx);
+    if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
     return ctx.reply(c.whatNext, mainMenu(c, s));
   });
 

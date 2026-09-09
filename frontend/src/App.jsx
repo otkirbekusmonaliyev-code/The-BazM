@@ -32,6 +32,11 @@ export default function App() {
       <Route path="/t/:slug/:qrToken" element={<ClientApp mode="qr" />} />
       <Route path="/m/:slug" element={<ClientApp mode="picker" />} />
 
+      {/* Namuna menyu — hech qanday muassasaga bog'lanmagan, serverga
+          so'rov yubormaydi. Bot va sayt ro'yxatdan o'tmagan odamni shu
+          yerga yuboradi. `/:slug` dan OLDIN turishi shart. */}
+      <Route path="/demo" element={<ClientApp mode="demo" />} />
+
       <Route path="/:slug/accept-invite/:token" element={<AcceptInvitePage />} />
       <Route path="/:slug/admin/*" element={<AdminApp />} />
       <Route path="/:slug/kitchen" element={<KitchenApp />} />

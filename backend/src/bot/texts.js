@@ -39,8 +39,74 @@ const uz = {
     'Istalgan paytda /bekor buyrug‘i bilan boshidan boshlashingiz mumkin.',
 
   openMenu: '🍽  Menyuni ochish',
+  openDemo: '🧪  Namuna menyuni ko‘rish',
   openLinkFallback:
     'Tugma o‘rniga havola — uni nusxalab brauzerda oching (bu manzil sinov serveriga tegishli, shuning uchun Telegram uni tugma qilib bera olmaydi):',
+
+  // ---------- Ro'yxatdan o'tish ----------
+  auth: {
+    // Reply-klaviatura tugmalari. Matn handler'i AYNAN shu satrlarni
+    // taqqoslaydi, shuning uchun ular o'zgarsa ikkala joyda o'zgaradi.
+    shareBtn: '📱  Raqamimni yuborish',
+    demoBtn: '🧪  Namuna menyu',
+    whyBtn: '❓  Nega raqam kerak?',
+
+    ask:
+      'Boshlashdan oldin bir marta tanishib olamiz 👋\n\n' +
+      'Pastdagi «📱 Raqamimni yuborish» tugmasini bosing — raqamingiz\n' +
+      'Telegram orqali o‘zi yuboriladi, qo‘lda terish shart emas.\n\n' +
+      'Shoshmayapsizmi? «🧪 Namuna menyu» tugmasi bilan ilova qanday\n' +
+      'ko‘rinishini ro‘yxatdan o‘tmasdan ham ko‘rishingiz mumkin.',
+
+    why:
+      'Raqam nima uchun kerak:\n\n' +
+      '📅  Bron qilganda uni qayta-qayta so‘ramaymiz\n' +
+      '🔔  Ofitsiantni chaqirganingizda kim chaqirganini biladi\n' +
+      '🧾  Buyurtmangiz yo‘qolib qolmaydi — telefoningiz almashsa ham topamiz\n\n' +
+      'Raqamingiz faqat shu muassasada qoladi va reklama uchun ishlatilmaydi.\n' +
+      'Xohlagan paytda /stop yozib o‘chirtirishingiz mumkin.\n\n' +
+      'Tayyor bo‘lsangiz — «📱 Raqamimni yuborish» tugmasini bosing.',
+
+    // Tugma o'rniga raqamni qo'lda yozganda
+    typed:
+      'Raqamni qo‘lda yozish kerak emas — uni tekshira olmaymiz.\n' +
+      'Pastdagi «📱 Raqamimni yuborish» tugmasini bosing, xolos.',
+
+    // Boshqa odamning kontakti forward qilinganda
+    notYours:
+      'Bu boshqa odamning raqami ko‘rinadi 🙂\n' +
+      'Iltimos, «📱 Raqamimni yuborish» tugmasi orqali O‘Z raqamingizni yuboring.',
+
+    // Ro'yxatdan o'tmagan holda tugma bosilganda
+    needed:
+      'Buning uchun avval raqamingizni yuborishingiz kerak.\n' +
+      '/start bosing va «📱 Raqamimni yuborish» tugmasini tanlang.',
+
+    done: (name) =>
+      `✅ Rahmat${name ? `, ${name}` : ''}! Ro‘yxatdan o‘tdingiz.\n\n` +
+      'Endi nimalar qila olasiz:\n\n' +
+      '🍽  Menyuni ochib, stolingizdan buyurtma berish\n' +
+      '🪑  Hozir kelgan bo‘lsangiz — bo‘sh stolni tanlash\n' +
+      '📅  Kelasi kunga stol bron qilish\n' +
+      '🧾  Buyurtmangiz qay bosqichda ekanini kuzatish\n' +
+      '🔔  Ofitsiantni bir tugma bilan chaqirish',
+
+    back: (name) => `Xush kelibsiz${name ? `, ${name}` : ''}!`,
+
+    removed:
+      '🗑  Raqamingiz o‘chirildi.\n\n' +
+      'Xohlagan paytda qaytadan yuborib, davom etishingiz mumkin.',
+  },
+
+  demo: {
+    intro:
+      '🧪  Bu — NAMUNA menyu.\n\n' +
+      'Ichida haqiqiy taomlar emas, ko‘rgazma uchun yozilganlari turadi va\n' +
+      'bergan buyurtmangiz hech qayerga bormaydi — oshxona uni ko‘rmaydi.\n\n' +
+      'Maqsad bitta: mijoz nimani ko‘rishini o‘z ko‘zingiz bilan ko‘rish.\n' +
+      'Buyurtma berib ko‘ring — kuzatuv ekrani o‘zi harakatga keladi.',
+    after: 'Ko‘rib chiqdingizmi? Endi haqiqiysini boshlaymiz 👇',
+  },
 
   app: {
     noTable:
@@ -167,8 +233,69 @@ const ru = {
     'В любой момент можно начать заново командой /bekor',
 
   openMenu: '🍽  Открыть меню',
+  openDemo: '🧪  Посмотреть демо-меню',
   openLinkFallback:
     'Вместо кнопки — ссылка. Скопируйте и откройте в браузере (это тестовый адрес, Telegram не делает из него кнопку):',
+
+  // ---------- Регистрация ----------
+  auth: {
+    shareBtn: '📱  Отправить мой номер',
+    demoBtn: '🧪  Демо-меню',
+    whyBtn: '❓  Зачем номер?',
+
+    ask:
+      'Прежде чем начать, давайте познакомимся 👋\n\n' +
+      'Нажмите кнопку «📱 Отправить мой номер» внизу — номер отправится\n' +
+      'через Telegram сам, вводить вручную не нужно.\n\n' +
+      'Не хотите спешить? Кнопка «🧪 Демо-меню» покажет, как выглядит\n' +
+      'приложение, без всякой регистрации.',
+
+    why:
+      'Зачем нужен номер:\n\n' +
+      '📅  При брони не будем спрашивать его каждый раз\n' +
+      '🔔  Официант будет знать, кто его позвал\n' +
+      '🧾  Заказ не потеряется — найдём даже при смене телефона\n\n' +
+      'Номер остаётся только у этого заведения и не используется для рекламы.\n' +
+      'В любой момент можно написать /stop и удалить его.\n\n' +
+      'Готовы — нажмите «📱 Отправить мой номер».',
+
+    typed:
+      'Вводить номер вручную не нужно — мы не сможем его проверить.\n' +
+      'Просто нажмите кнопку «📱 Отправить мой номер» внизу.',
+
+    notYours:
+      'Похоже, это чужой номер 🙂\n' +
+      'Пожалуйста, отправьте СВОЙ номер кнопкой «📱 Отправить мой номер».',
+
+    needed:
+      'Для этого сначала нужно отправить номер.\n' +
+      'Нажмите /start и выберите «📱 Отправить мой номер».',
+
+    done: (name) =>
+      `✅ Спасибо${name ? `, ${name}` : ''}! Регистрация завершена.\n\n` +
+      'Что теперь можно делать:\n\n' +
+      '🍽  Открыть меню и заказать прямо со своего стола\n' +
+      '🪑  Если вы уже здесь — выбрать свободный стол\n' +
+      '📅  Забронировать стол на другой день\n' +
+      '🧾  Следить, на каком этапе ваш заказ\n' +
+      '🔔  Позвать официанта одной кнопкой',
+
+    back: (name) => `С возвращением${name ? `, ${name}` : ''}!`,
+
+    removed:
+      '🗑  Ваш номер удалён.\n\n' +
+      'В любой момент можно отправить его снова и продолжить.',
+  },
+
+  demo: {
+    intro:
+      '🧪  Это ДЕМО-меню.\n\n' +
+      'Внутри не настоящие блюда, а выставочные, и ваш заказ никуда\n' +
+      'не уйдёт — кухня его не увидит.\n\n' +
+      'Цель одна: своими глазами увидеть, что видит гость.\n' +
+      'Попробуйте сделать заказ — экран отслеживания оживёт сам.',
+    after: 'Посмотрели? Теперь давайте по-настоящему 👇',
+  },
 
   app: {
     noTable:

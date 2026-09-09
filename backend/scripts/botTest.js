@@ -120,6 +120,19 @@ function lastScreen() {
 const firstLine = (s) => (s || '').split('\n')[0];
 const btn = (screen, data) => screen.buttons.find((b) => b.data === data);
 
+// Sinov yaratgan mijozlar — oxirida tozalanadi
+const registeredIds = [];
+
+// Bot endi ishlashdan oldin kontakt so'raydi. Ko'p sinovlar aynan
+// ro'yxatdan o'tgan mijozni tekshiradi, shuning uchun butun yo'l
+// (start -> til -> kontakt) bitta yordamchiga yig'ildi.
+async function register(bot, who, phone) {
+  await bot.handleUpdate(textUpdate(who, '/start'));
+  await bot.handleUpdate(callbackUpdate(who, 'set_lang_uz'));
+  await bot.handleUpdate(contactUpdate(who, phone || `+99890${String(who.user.id).slice(-7)}`));
+  registeredIds.push(String(who.user.id));
+}
+
 async function main() {
   await requireTenant(SLUG);
 
@@ -135,8 +148,8 @@ async function main() {
 
   const db = await getTenantClient(SLUG);
 
-  // ---------- 1) Birinchi /start — til tanlash ----------
-  console.log('1) /start — avval til so\'raladi');
+  // ---------- 1) Birinchi /start — til, so'ng ro'yxatdan o'tish ----------
+  console.log('1) /start — til so\'raladi, so\'ng kontakt');
   const me = newUser();
   const bot = makeBot();
   {
@@ -147,24 +160,114 @@ async function main() {
 
     await bot.handleUpdate(callbackUpdate(me, 'set_lang_uz'));
     const m = lastScreen();
-    check('til tanlangach bosh menyu chiqdi', !!btn(m, 'pick_table') && !!btn(m, 'reserve'));
-    check('menyuni ko\'rish tugmasi bor', !!btn(m, 'menu'));
-    check('yordam va til tugmalari bor', !!btn(m, 'help') && !!btn(m, 'lang'));
+    check('til tanlangach kontakt so\'raldi', m.text.includes('tanishib olamiz'), firstLine(m.text));
+    check('kontakt tugmasi berildi', m.keyboard.some((k) => k.includes('Raqamimni yuborish')), m.keyboard.join(' | '));
+    check('namuna menyu tugmasi ham bor', m.keyboard.some((k) => k.includes('Namuna')));
+    check('"nega kerak" tugmasi bor', m.keyboard.some((k) => k.includes('Nega')));
+    check('bosh menyu HALI ko\'rsatilmadi', !btn(m, 'pick_table'));
   }
 
-  // ---------- 2) Ruscha ----------
-  console.log('\n2) Til almashtirish (ruscha)');
+  // ---------- 2) Raqam bermaganda nima bo'ladi ----------
+  console.log('\n2) Raqam bermaganda — tushuntiriladi, boshi berk ko\'cha yo\'q');
+  {
+    // Oddiy matn — bot jim qolmaydi, qayta so'raydi
+    await bot.handleUpdate(textUpdate(me, 'salom'));
+    check('javobsiz qolmadi', lastScreen().text.includes('tanishib olamiz'), firstLine(lastScreen().text));
+
+    // "Nega kerak?"
+    await bot.handleUpdate(textUpdate(me, '❓  Nega raqam kerak?'));
+    const why = lastScreen();
+    check('sabab tushuntirildi', why.text.includes('nima uchun kerak'), firstLine(why.text));
+    check('o\'chirish mumkinligi aytildi', why.text.includes('/stop'));
+    check('kontakt tugmasi saqlanib qoldi', why.keyboard.some((k) => k.includes('Raqamimni')));
+
+    // Raqamni qo'lda yozish — tugma kerakligi aytiladi
+    await bot.handleUpdate(textUpdate(me, '+998901112233'));
+    check('qo\'lda yozilgan raqam qabul qilinmadi', lastScreen().text.includes('qo‘lda yozish kerak emas'));
+
+    // Begona kontakt (user_id boshqa odamniki)
+    await bot.handleUpdate({
+      update_id: (updateId += 1),
+      message: {
+        message_id: (messageId += 1),
+        date: Math.floor(Date.now() / 1000),
+        chat: me.chat,
+        from: me.user,
+        contact: { phone_number: '+998900000000', first_name: 'Begona', user_id: 999999999 },
+      },
+    });
+    check('begona kontakt rad etildi', lastScreen().text.includes('boshqa odamning raqami'));
+
+    // Ro'yxatdan o'tmasdan tugma bosishga urinish
+    await bot.handleUpdate(callbackUpdate(me, 'pick_table'));
+    check('ro\'yxatsiz stol tanlab bo\'lmadi', lastScreen().text.includes('tanishib olamiz'));
+  }
+
+  // ---------- 3) Namuna menyu — ro'yxatdan o'tmasdan ----------
+  console.log('\n3) Namuna menyu ro\'yxatdan o\'tmasdan ochiladi');
+  {
+    await bot.handleUpdate(textUpdate(me, '🧪  Namuna menyu'));
+    const s = lastScreen();
+    check('namuna taklif qilindi', s.text.includes('NAMUNA menyu'), firstLine(s.text));
+    check('haqiqiy buyurtma ketmasligi aytildi', s.text.includes('hech qayerga bormaydi'));
+
+    const link = (s.buttons.find((b) => b.url) || {}).url || s.text;
+    check('namuna havolasi berildi', link.includes('/demo'), link.includes('/demo') ? '/demo' : link.slice(0, 60));
+    check('haqiqiy muassasa menyusiga OLIB BORMADI', !link.includes(`/m/${SLUG}`));
+
+    // /demo buyrug'i ham ishlaydi
+    await bot.handleUpdate(textUpdate(me, '/demo'));
+    check('/demo buyrug\'i ishladi', lastScreen().text.includes('NAMUNA menyu'));
+  }
+
+  // ---------- 4) Kontakt ulashildi ----------
+  console.log('\n4) Kontakt ulashilgach ro\'yxatdan o\'tadi');
+  {
+    await bot.handleUpdate(contactUpdate(me, '+998901234500'));
+    registeredIds.push(String(me.user.id));
+
+    // Ikki xabar: tabrik + bosh menyu
+    const shown = sink.filter((x) => x.method === 'sendMessage');
+    const congrats = shown[shown.length - 2];
+    check('ro\'yxatdan o\'tgani tasdiqlandi', congrats.payload.text.includes('Ro‘yxatdan o‘tdingiz'), firstLine(congrats.payload.text));
+    check('endi nimalar qilish mumkinligi aytildi', congrats.payload.text.includes('Endi nimalar qila olasiz'));
+    check('ro\'yxat to\'liq (5 ta imkoniyat)', ['Menyuni ochib', 'bo‘sh stolni', 'bron qilish', 'kuzatish', 'chaqirish'].every((x) => congrats.payload.text.includes(x)));
+    check('kontakt klaviaturasi olib tashlandi', !!(congrats.payload.reply_markup || {}).remove_keyboard);
+
+    const home = lastScreen();
+    check('bosh menyu ochildi', !!btn(home, 'pick_table') && !!btn(home, 'reserve'));
+    check('menyuni ko\'rish tugmasi bor', !!btn(home, 'menu'));
+    check('yordam va til tugmalari bor', !!btn(home, 'help') && !!btn(home, 'lang'));
+
+    const saved = await db.telegramCustomer.findUnique({ where: { telegramId: String(me.user.id) } });
+    check('mijoz bazaga yozildi', !!saved, saved && saved.phone);
+    check('raqam to\'g\'ri saqlandi', !!saved && saved.phone === '+998901234500');
+
+    // Qayta /start — endi qaytadan so'ramaydi
+    await bot.handleUpdate(textUpdate(me, '/start'));
+    const again = lastScreen();
+    check('ikkinchi marta raqam so\'ralmadi', !again.text.includes('tanishib olamiz'), firstLine(again.text));
+    check('ism bilan kutib olindi', again.text.includes('Xush kelibsiz'));
+  }
+
+  // ---------- 5) Ruscha ----------
+  console.log('\n5) Til almashtirish (ruscha)');
   {
     const ru = newUser();
     await bot.handleUpdate(textUpdate(ru, '/start'));
     await bot.handleUpdate(callbackUpdate(ru, 'set_lang_ru'));
     const s = lastScreen();
-    check('ruschaga o\'tdi', s.text.includes('русский') || s.text.includes('Что хотите'), firstLine(s.text));
-    check('tugmalar ham ruscha', s.buttons.some((b) => b.text.includes('стол') || b.text.includes('меню')));
+    check('ruschaga o\'tdi', s.text.includes('познакомимся') || s.text.includes('русский'), firstLine(s.text));
+    check('ruscha kontakt tugmasi', s.keyboard.some((k) => k.includes('Отправить мой номер')), s.keyboard.join(' | '));
+
+    await bot.handleUpdate(contactUpdate(ru, '+998901234501'));
+    registeredIds.push(String(ru.user.id));
+    const home = lastScreen();
+    check('ruscha bosh menyu', home.buttons.some((b) => b.text.includes('стол') || b.text.includes('меню')));
   }
 
-  // ---------- 3) Menyuni bot ichida ko'rish ----------
-  console.log('\n3) Menyuni bot ichida ko\'rish');
+  // ---------- 6) Menyuni bot ichida ko'rish ----------
+  console.log('\n6) Menyuni bot ichida ko\'rish');
   {
     await bot.handleUpdate(callbackUpdate(me, 'menu'));
     const s = lastScreen();
@@ -179,12 +282,22 @@ async function main() {
     }
   }
 
-  // ---------- 4) QR deep link ----------
-  console.log('\n4) QR deep link (/start t_<qrToken>)');
+  // ---------- 7) QR deep link ----------
+  //
+  // Eng nozik joy: QR kod bilan kelgan odam ro'yxatdan o'tish oralig'ida
+  // YO'QOLMASLIGI kerak. Kod eslab qolinadi va kontakt berilgach odam
+  // to'g'ri o'z stoliga tushadi.
+  console.log('\n7) QR deep link (/start t_<qrToken>) — ro\'yxatdan keyin ham eslanadi');
   {
     const table = await db.restaurantTable.findFirst({ orderBy: { tableNumber: 'asc' } });
     const qrUser = newUser();
     await bot.handleUpdate(textUpdate(qrUser, `/start t_${table.qrToken}`));
+    await bot.handleUpdate(callbackUpdate(qrUser, 'set_lang_uz'));
+    check('QR bilan kelganda ham avval kontakt so\'raldi', lastScreen().text.includes('tanishib olamiz'));
+
+    await bot.handleUpdate(contactUpdate(qrUser, '+998901234502'));
+    registeredIds.push(String(qrUser.user.id));
+
     const s = lastScreen();
     check('stol raqami aytildi', s.text.includes(`${table.tableNumber}-stol`), firstLine(s.text));
 
@@ -196,18 +309,21 @@ async function main() {
     check('havola o\'sha stolga ishora qiladi', link.includes(table.qrToken));
   }
 
-  // ---------- 5) Yaroqsiz QR ----------
-  console.log('\n5) Yaroqsiz QR kod');
+  // ---------- 8) Yaroqsiz QR ----------
+  console.log('\n8) Yaroqsiz QR kod');
   {
     const badUser = newUser();
     await bot.handleUpdate(textUpdate(badUser, '/start t_bunday_token_yoq_12345'));
+    await bot.handleUpdate(callbackUpdate(badUser, 'set_lang_uz'));
+    await bot.handleUpdate(contactUpdate(badUser, '+998901234503'));
+    registeredIds.push(String(badUser.user.id));
     const s = lastScreen();
     check('yaroqsiz kod aniqlandi', s.text.includes('ishlamayapti'), firstLine(s.text));
     check('boshi berk ko\'chada qoldirmadi', !!btn(s, 'pick_table'));
   }
 
-  // ---------- 6) Bo'sh stol tanlash ----------
-  console.log('\n6) Bo\'sh stolni tanlash va band qilish');
+  // ---------- 10) Bo'sh stol tanlash ----------
+  console.log('\n10) Bo\'sh stolni tanlash va band qilish');
   {
     await bot.handleUpdate(callbackUpdate(me, 'pick_table'));
     const list = lastScreen();
@@ -243,8 +359,7 @@ async function main() {
 
       // Boshqa mijoz o'sha stolni olmoqchi bo'lsa — rad etiladi
       const rival = newUser();
-      await bot.handleUpdate(textUpdate(rival, '/start'));
-      await bot.handleUpdate(callbackUpdate(rival, 'set_lang_uz'));
+      await register(bot, rival, '+998901234510');
       await bot.handleUpdate(callbackUpdate(rival, tableButtons[0].data));
       check('band stolni qayta olishga urinish rad etildi', lastScreen().text.includes('band qilishdi'));
 
@@ -260,29 +375,28 @@ async function main() {
     }
   }
 
-  // ---------- 7) Bron qilish ----------
-  console.log('\n7) Bosqichma-bosqich bron qilish');
+  // ---------- 11) Bron qilish ----------
+  console.log('\n11) Bosqichma-bosqich bron qilish');
   {
     const guest = newUser();
-    await bot.handleUpdate(textUpdate(guest, '/start'));
-    await bot.handleUpdate(callbackUpdate(guest, 'set_lang_uz'));
+    await register(bot, guest, '+998901234567');
 
     await bot.handleUpdate(callbackUpdate(guest, 'reserve'));
     const nameStep = lastScreen();
     check('ism so\'raldi', nameStep.text.includes('Ismingizni'), firstLine(nameStep.text));
     check('"mening ismim" tugmasi taklif qilindi', !!btn(nameStep, 'r_myname'));
 
+    // RO'YXATDAN O'TISHNING KO'RINADIGAN FOYDASI: raqam allaqachon bor,
+    // shuning uchun bron qilayotganda u QAYTA so'ralmaydi
     await bot.handleUpdate(textUpdate(guest, 'Dilnoza Karimova'));
-    const phoneStep = lastScreen();
-    check('telefon so\'raldi', phoneStep.text.includes('Telefon'), firstLine(phoneStep.text));
-    check('kontakt ulashish tugmasi berildi', phoneStep.keyboard.length > 0, phoneStep.keyboard[0]);
-
-    await bot.handleUpdate(textUpdate(guest, 'notogri-raqam!!!'));
-    check('noto\'g\'ri raqam rad etildi', lastScreen().text.includes('noto‘g‘ri'));
-
-    // Kontakt tugmasi orqali yuborish ham ishlashi kerak
-    await bot.handleUpdate(contactUpdate(guest, '+998901234567'));
     const partyStep = lastScreen();
+    check('telefon qayta SO\'RALMADI', !partyStep.text.includes('Telefon raqamingizni'), firstLine(partyStep.text));
+
+    const phoneShown = sink
+      .filter((x) => x.method === 'sendMessage')
+      .map((x) => x.payload.text)
+      .some((tx) => tx && tx.includes('+998901234567'));
+    check('ro\'yxatdagi raqam o\'zi qo\'yildi', phoneShown);
     check('kontakt qabul qilindi va kishilar soni so\'raldi', partyStep.text.includes('Necha kishi'), firstLine(partyStep.text));
     check('son tugmalari bor', partyStep.buttons.filter((b) => b.data && b.data.startsWith('r_party_')).length >= 8);
 
@@ -325,12 +439,11 @@ async function main() {
     await db.tableReservation.deleteMany({ where: { clientName: 'Dilnoza Karimova' } });
   }
 
-  // ---------- 8) Skanersiz Mini App ----------
-  console.log('\n8) QR kodsiz menyuni ochish');
+  // ---------- 12) Skanersiz Mini App ----------
+  console.log('\n12) QR kodsiz menyuni ochish');
   {
     const q = newUser();
-    await bot.handleUpdate(textUpdate(q, '/start'));
-    await bot.handleUpdate(callbackUpdate(q, 'set_lang_uz'));
+    await register(bot, q, '+998901234520');
     const home = lastScreen();
     check('bosh menyuda "Menyuni ochish" bor', !!btn(home, 'open_app'), home.buttons[0] && home.buttons[0].text);
 
@@ -349,12 +462,11 @@ async function main() {
     }
   }
 
-  // ---------- 9) Bekor qilish ----------
-  console.log('\n9) Oqimni bekor qilish');
+  // ---------- 13) Bekor qilish ----------
+  console.log('\n13) Oqimni bekor qilish');
   {
     const q = newUser();
-    await bot.handleUpdate(textUpdate(q, '/start'));
-    await bot.handleUpdate(callbackUpdate(q, 'set_lang_uz'));
+    await register(bot, q, '+998901234521');
     await bot.handleUpdate(callbackUpdate(q, 'reserve'));
     await bot.handleUpdate(textUpdate(q, 'Kimdir'));
     await bot.handleUpdate(textUpdate(q, '/bekor'));
@@ -366,6 +478,36 @@ async function main() {
     await bot.handleUpdate(textUpdate(q, 'yana nimadir'));
     check('bekor qilingach eski oqim davom etmadi', !!btn(lastScreen(), 'reserve'));
   }
+
+  // ---------- 14) Raqamni o'chirish (/stop) ----------
+  //
+  // Matnda "xohlagan paytda /stop yozib o'chirtirishingiz mumkin" deyilgan.
+  // Va'da berilgan narsa HAQIQATAN ishlashi kerak.
+  console.log('\n14) /stop — raqamni o\'chirish');
+  {
+    const q = newUser();
+    await register(bot, q, '+998901234530');
+    check('avval ro\'yxatda edi', !!(await db.telegramCustomer.findUnique({ where: { telegramId: String(q.user.id) } })));
+
+    await bot.handleUpdate(textUpdate(q, '/stop'));
+    const removed = await db.telegramCustomer.findUnique({ where: { telegramId: String(q.user.id) } });
+    check('bazadan o\'chirildi', !removed);
+
+    const s = lastScreen();
+    check('qayta ro\'yxatdan o\'tish taklif qilindi', s.text.includes('tanishib olamiz'), firstLine(s.text));
+    check('kontakt tugmasi qaytdi', s.keyboard.some((k) => k.includes('Raqamimni')));
+
+    // Endi tugmalar yana yopiq bo'lishi kerak
+    await bot.handleUpdate(callbackUpdate(q, 'reserve'));
+    check('o\'chirgandan keyin bron yopildi', lastScreen().text.includes('tanishib olamiz'));
+  }
+
+  // ---------- Tozalash ----------
+  // Sinov yaratgan mijozlar haqiqiy bazada qolib ketmasin
+  await db.telegramCustomer.deleteMany({ where: { telegramId: { in: registeredIds } } });
+  const left = await db.telegramCustomer.count({ where: { telegramId: { in: registeredIds } } });
+  console.log(`\n  ✔ tozalandi — ${registeredIds.length} ta sinov mijozi o'chirildi${left ? ` (${left} ta qoldi!)` : ''}`);
+  if (left) failures += 1;
 
   console.log(`\n=== Natija: ${failures === 0 ? 'HAMMASI O\'TDI ✔' : `${failures} ta xato ✘`} ===\n`);
   process.exit(failures === 0 ? 0 : 1);

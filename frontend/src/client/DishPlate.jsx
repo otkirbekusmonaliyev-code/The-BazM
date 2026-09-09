@@ -36,6 +36,8 @@ export default function DishPlate({ item, size = 'md', className = '' }) {
   }
 
   const tone = toneOf(item.name || '');
+  // Namuna menyuda rasm o'rniga emoji beriladi — harf o'rniga o'shani
+  // chizamiz, shunda hech qanday fayl yuklamasdan ham menyu "to'q" ko'rinadi
   const letter = (item.name || '?').trim().charAt(0).toUpperCase();
 
   return (
@@ -45,7 +47,11 @@ export default function DishPlate({ item, size = 'md', className = '' }) {
       aria-hidden="true"
     >
       <span className="dish-plate-ring" />
-      <span className="dish-plate-letter">{letter}</span>
+      {item.emoji ? (
+        <span className="dish-plate-emoji">{item.emoji}</span>
+      ) : (
+        <span className="dish-plate-letter">{letter}</span>
+      )}
       <span className="dish-plate-sheen" />
     </div>
   );

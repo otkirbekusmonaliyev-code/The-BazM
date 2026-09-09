@@ -35,8 +35,10 @@ async function launchOne({ token, slug, name }) {
     await bot.telegram.setMyCommands([
       { command: 'start', description: 'Boshlash / Начать' },
       { command: 'menu', description: 'Asosiy menyu / Главное меню' },
+      { command: 'demo', description: 'Namuna menyu / Демо-меню' },
       { command: 'bekor', description: 'Bekor qilish / Отмена' },
       { command: 'help', description: 'Yordam / Помощь' },
+      { command: 'stop', description: 'Raqamimni o\'chirish / Удалить номер' },
     ]);
   } catch (err) {
     console.error(`   [bot:${slug}] buyruqlar o'rnatilmadi: ${err.message}`);

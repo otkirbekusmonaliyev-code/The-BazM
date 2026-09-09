@@ -53,7 +53,7 @@ model User {
   id           String    @id @default(uuid())
   fullName     String
   phone        String    @unique // login: +998901234567 kabi formatda
-  email        String?           // ixtiyoriy, faqat aloqa uchun
+  email        String? // ixtiyoriy, faqat aloqa uchun
   passwordHash String
   role         StaffRole
   isActive     Boolean   @default(true)
@@ -63,14 +63,14 @@ model User {
 }
 
 model StaffInvite {
-  id          String    @id @default(uuid())
-  phone       String    // taklif qilinayotgan xodimning raqami
-  fullName    String
-  role        StaffRole
-  token       String    @unique
-  isUsed      Boolean   @default(false)
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+  id        String    @id @default(uuid())
+  phone     String // taklif qilinayotgan xodimning raqami
+  fullName  String
+  role      StaffRole
+  token     String    @unique
+  isUsed    Boolean   @default(false)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
 }
 
 model RestaurantTable {
@@ -95,36 +95,36 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id           String       @id @default(uuid())
-  category     MenuCategory @relation(fields: [categoryId], references: [id])
-  categoryId   String
-  name         String
-  description  String?
-  price        Decimal
-  imageUrl     String?
-  isAvailable  Boolean      @default(true)
-  createdAt    DateTime     @default(now())
+  id          String       @id @default(uuid())
+  category    MenuCategory @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  name        String
+  description String?
+  price       Decimal
+  imageUrl    String?
+  isAvailable Boolean      @default(true)
+  createdAt   DateTime     @default(now())
 
-  orderItems   OrderItem[]
+  orderItems OrderItem[]
 }
 
 model Order {
-  id               String                 @id @default(uuid())
-  table            RestaurantTable        @relation(fields: [tableId], references: [id])
-  tableId          String
-  clientName       String
-  status           OrderStatus            @default(new)
-  totalPrice       Decimal                @default(0)
+  id         String          @id @default(uuid())
+  table      RestaurantTable @relation(fields: [tableId], references: [id])
+  tableId    String
+  clientName String
+  status     OrderStatus     @default(new)
+  totalPrice Decimal         @default(0)
 
   assignedWaiter   User?                  @relation("AssignedWaiter", fields: [assignedWaiterId], references: [id])
   assignedWaiterId String?
   assignmentStatus WaiterAssignmentStatus @default(none)
 
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  items            OrderItem[]
-  statusLog        OrderStatusHistory[]
+  items     OrderItem[]
+  statusLog OrderStatusHistory[]
 }
 
 model OrderItem {
@@ -151,12 +151,40 @@ model OrderStatusHistory {
 model TableReservation {
   id              String            @id @default(uuid())
   table           RestaurantTable?  @relation(fields: [tableId], references: [id])
-  tableId         String?           // null bo'lishi mumkin — admin keyin stol tayinlaydi
+  tableId         String? // null bo'lishi mumkin — admin keyin stol tayinlaydi
   clientName      String
   phone           String
   partySize       Int               @default(2)
-  reservationDate DateTime          // sana + vaqt birga
+  reservationDate DateTime // sana + vaqt birga
   status          ReservationStatus @default(pending)
   note            String?
   createdAt       DateTime          @default(now())
+}
+
+// TELEGRAM BOTIDAN RO'YXATDAN O'TGAN MIJOZ.
+//
+// Bot endi ish boshlashdan oldin mijozdan kontakt so'raydi. Sabablari:
+//   - bron va buyurtmada raqam qayta-qayta so'ralmasin,
+//   - ofitsiant chaqirilganda kim chaqirgani ma'lum bo'lsin,
+//   - muassasa o'z mijozlarini biladi (qayta murojaat, chegirma).
+//
+// Yozuv HAR BIR MUASSASANING O'Z bazasida turadi: bir restoranga raqamini
+// bergan odam boshqa restoranga avtomatik tanilmaydi. Bu ataylab shunday —
+// mijoz raqamini kimga berganini o'zi hal qiladi.
+//
+// `telegramId` — Telegram foydalanuvchi raqami. Kontakt HAQIQATAN O'ZINIKI
+// ekani tekshiriladi (contact.user_id === from.id), shuning uchun bu yerga
+// begonaning raqami tushib qolmaydi.
+model TelegramCustomer {
+  id         String   @id @default(uuid())
+  telegramId String   @unique
+  phone      String
+  firstName  String?
+  username   String?
+  lang       String   @default("uz")
+  isBlocked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now()) @updatedAt
+
+  @@index([phone])
 }

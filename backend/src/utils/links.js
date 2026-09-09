@@ -176,6 +176,12 @@ function tableUrl(slug, qrToken) {
 // Stolga bog'lanmagan kirish (bot orqali "o'zim stol tanlayman" oqimi)
 const tablePickerUrl = (slug) => `${appUrl()}/m/${slug}`;
 
+// NAMUNA MENYU — hech qanday muassasaga bog'lanmagan.
+// Bot ro'yxatdan o'tmagan odamni haqiqiy restoranning menyusiga emas,
+// aynan shu yerga yuboradi: begona odam ishlayotgan muassasaning ichiga
+// kirmasin, va ko'rgan narsasi o'sha kungi menyuga bog'liq bo'lmasin.
+const demoUrl = () => `${appUrl()}/demo`;
+
 // Mijoz ilovasining stol sahifasi — bot Mini App tugmasi shuni ochadi
 const tableWebUrl = (slug, qrToken) => `${appUrl()}/t/${slug}/${qrToken}`;
 
@@ -190,5 +196,6 @@ module.exports = {
   tableUrl,
   tableWebUrl,
   tablePickerUrl,
+  demoUrl,
   inviteUrl,
 };
