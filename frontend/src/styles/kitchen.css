@@ -1,0 +1,494 @@
+/* ============================================================
+   KITCHEN DISPLAY — Oshpaz paneli
+   Planshetda, shovqinli va band oshxonada ishlatiladi:
+   sof qora fon, katta shrift, 64px+ tugmalar, yuqori kontrast.
+   BU PANEL DOIM QORONG'I — tungi/kunduzgi tugma yo'q (funksional talab).
+   ============================================================ */
+
+.app-kitchen {
+  --k-bg: #000000;
+  --k-card: #1a1a1a;
+  --k-card-2: #242424;
+  --k-text: #ffffff;
+  --k-dim: #9a9a9a;
+  --k-new: #ef4444;
+  --k-accepted: #3b82f6;
+  --k-preparing: #f59e0b;
+  --k-ready: #22c55e;
+
+  min-height: 100vh;
+  background: var(--k-bg);
+  color: var(--k-text);
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-kitchen * {
+  font-weight: inherit;
+}
+
+/* ---------- Yuqori panel ---------- */
+
+.k-topbar {
+  height: 68px;
+  flex-shrink: 0;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #0c0c0c;
+  border-bottom: 2px solid #232323;
+}
+
+.k-topbar h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.k-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.k-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--k-dim);
+}
+
+.k-live::before {
+  content: '';
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--k-ready);
+}
+
+.k-live.off::before {
+  background: var(--k-new);
+}
+
+.k-topbtn {
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: var(--k-card);
+  border: 2px solid #333;
+  color: var(--k-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.k-topbtn:hover {
+  border-color: #555;
+}
+
+/* ---------- Umumiy tuzilma ---------- */
+
+.k-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  min-height: 0;
+}
+
+.k-board {
+  padding: 18px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.k-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 90px 20px;
+  color: var(--k-dim);
+  font-size: 22px;
+}
+
+/* ---------- Buyurtma kartochkasi ---------- */
+
+.k-card {
+  background: var(--k-card);
+  border: 3px solid #333;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: bounceIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.k-card.status-new {
+  border-color: var(--k-new);
+  animation: bounceIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), newPulse 1.6s ease-in-out 3;
+}
+
+@keyframes newPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0.28); }
+}
+
+.k-card.status-accepted { border-color: var(--k-accepted); }
+.k-card.status-preparing { border-color: var(--k-preparing); }
+.k-card.status-ready { border-color: var(--k-ready); }
+
+.k-card.leaving {
+  animation: cardOut 0.35s ease forwards;
+}
+
+@keyframes cardOut {
+  to {
+    transform: translateX(60px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+.k-card-head {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid #2a2a2a;
+}
+
+.k-table-no {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.k-client {
+  font-size: 18px;
+  color: var(--k-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.k-timer {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.k-timer.warn { color: var(--k-preparing); }
+.k-timer.danger {
+  color: var(--k-new);
+  animation: timerBlink 1s steps(2, start) infinite;
+}
+
+@keyframes timerBlink {
+  50% { opacity: 0.45; }
+}
+
+.k-items {
+  padding: 12px 16px;
+  flex: 1;
+}
+
+.k-item {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 19px;
+}
+
+.k-item-qty {
+  min-width: 44px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  color: var(--k-preparing);
+}
+
+.k-item-note {
+  display: block;
+  font-size: 16px;
+  color: var(--k-preparing);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Katta amal tugmasi — kamida 64px balandlik */
+.k-action {
+  height: 68px;
+  width: 100%;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #000;
+  transition: filter 0.15s ease;
+}
+
+.k-action:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.k-action:active:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.k-action.accept { background: var(--k-accepted); color: #fff; }
+.k-action.prepare { background: var(--k-preparing); }
+.k-action.ready { background: var(--k-ready); }
+
+.k-cancel {
+  height: 44px;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--k-dim);
+  border-top: 2px solid #2a2a2a;
+}
+
+.k-cancel:hover {
+  color: var(--k-new);
+}
+
+/* ---------- Ofitsiant tanlash qismi ---------- */
+
+.k-assign {
+  border-top: 2px solid #2a2a2a;
+  padding: 14px 16px;
+  overflow: hidden;
+  animation: assignOpen 0.3s ease;
+}
+
+@keyframes assignOpen {
+  from {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    max-height: 340px;
+    opacity: 1;
+  }
+}
+
+.k-assign-label {
+  font-size: 16px;
+  color: var(--k-dim);
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+}
+
+.k-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.k-avatar {
+  width: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.k-avatar-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--k-card-2);
+  border: 2px solid #3a3a3a;
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+  font-weight: 800;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.k-avatar:hover .k-avatar-circle {
+  border-color: var(--k-ready);
+  transform: translateY(-2px);
+}
+
+.k-avatar.waiting .k-avatar-circle {
+  border: 2px dashed var(--k-preparing);
+  color: var(--k-preparing);
+  animation: spin 2s linear infinite;
+}
+
+.k-avatar-name {
+  font-size: 12.5px;
+  color: var(--k-dim);
+  text-align: center;
+  max-width: 62px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.k-waiting-text {
+  font-size: 18px;
+  color: var(--k-preparing);
+  padding: 4px 0;
+}
+
+.k-declined-text {
+  font-size: 16px;
+  color: var(--k-new);
+  margin-top: 10px;
+  animation: bounceIn 0.3s ease;
+}
+
+.k-no-waiters {
+  font-size: 16px;
+  color: var(--k-dim);
+}
+
+/* ---------- Ofitsiantlar paneli ---------- */
+
+.k-waiters {
+  background: #0c0c0c;
+  border-left: 2px solid #232323;
+  padding: 16px 14px;
+  overflow-y: auto;
+}
+
+.k-waiters h2 {
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--k-dim);
+  margin-bottom: 14px;
+}
+
+.k-waiter-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--k-card);
+  border: 2px solid #2a2a2a;
+  margin-bottom: 10px;
+  transition: opacity 0.25s ease, box-shadow 0.4s ease;
+}
+
+.k-waiter-card.busy {
+  opacity: 0.7;
+}
+
+.k-waiter-card.flash-free {
+  animation: flashFree 0.5s ease;
+}
+.k-waiter-card.flash-busy {
+  animation: flashBusy 0.5s ease;
+}
+
+@keyframes flashFree {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+}
+
+@keyframes flashBusy {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+
+.k-waiter-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--k-card-2);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.k-waiter-name {
+  font-size: 15.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.k-waiter-sub {
+  font-size: 12.5px;
+  color: var(--k-dim);
+  margin-top: 2px;
+}
+
+.k-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s ease;
+}
+
+.k-dot.free { background: var(--k-ready); }
+.k-dot.busy { background: var(--k-new); }
+
+/* ---------- Bronlar mini-ro'yxati ---------- */
+
+.k-res-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--k-card);
+  border: 2px solid #2a2a2a;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.k-res-item b {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--k-preparing);
+}
+
+/* ---------- Login ---------- */
+
+.k-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #000;
+  padding: 24px;
+}
+
+.k-login-card {
+  width: min(400px, 100%);
+  background: var(--k-card);
+  border: 3px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 30px 26px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .k-body {
+    grid-template-columns: 1fr;
+  }
+  .k-waiters {
+    border-left: none;
+    border-top: 2px solid #232323;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+  }
+  .k-waiters h2 {
+    display: none;
+  }
+  .k-waiter-card {
+    min-width: 190px;
+    margin-bottom: 0;
+  }
+}

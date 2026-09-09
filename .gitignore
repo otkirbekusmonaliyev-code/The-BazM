@@ -1,0 +1,48 @@
+# ---------- Sirlar ----------
+# Bu fayllarda baza paroli, JWT siri, shifrlash kaliti va Telegram bot
+# tokeni bor. Ular HECH QACHON repozitoriyga tushmasligi kerak.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------- Bog'liqliklar ----------
+node_modules/
+.pnp
+.pnp.js
+
+# ---------- Yig'ilgan fayllar ----------
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# ---------- Yuklangan fayllar ----------
+# Taom rasmlari serverda saqlanadi, kodda emas
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ---------- Prisma ----------
+# Generatsiya qilinadigan client
+**/node_modules/.prisma/
+**/generated/
+
+# ---------- Jurnal va vaqtinchalik ----------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+tmp/
+temp/
+
+# ---------- Muhit ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~

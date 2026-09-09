@@ -1,0 +1,171 @@
+/* ============================================================
+   PANEL ICHIDAGI QO'SHIMCHA BO'LAKLAR
+   Xodimlar bo'limidagi rol tanlagichi va stollar QR varag'i.
+   glass.css dan KEYIN yuklanadi.
+   ============================================================ */
+
+/* ---------- Xodimlar: rollar bo'yicha bo'limlar ---------- */
+
+.role-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.role-tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border-radius: 15px;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  transition: transform 0.28s var(--ease-glass), border-color 0.28s ease,
+    background 0.28s ease, box-shadow 0.28s ease;
+}
+
+.role-tab:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--amber) 50%, transparent);
+}
+
+.role-tab.active {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--amber) 22%, transparent);
+}
+
+.role-tab-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  background: color-mix(in srgb, var(--amber) 15%, transparent);
+  transition: transform 0.35s var(--ease-glass);
+}
+
+.role-tab.active .role-tab-icon {
+  transform: scale(1.08) rotate(-4deg);
+}
+
+.role-tab b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.role-tab small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Bo'lim almashganda ro'yxat yumshoq paydo bo'ladi */
+.dl-panel .dl-staff-row {
+  animation: rowFade 0.4s var(--ease-glass) backwards;
+}
+.dl-panel .dl-staff-row:nth-child(2) { animation-delay: 0.03s; }
+.dl-panel .dl-staff-row:nth-child(3) { animation-delay: 0.06s; }
+.dl-panel .dl-staff-row:nth-child(4) { animation-delay: 0.09s; }
+.dl-panel .dl-staff-row:nth-child(5) { animation-delay: 0.12s; }
+.dl-panel .dl-staff-row:nth-child(6) { animation-delay: 0.15s; }
+
+@keyframes rowFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Hali qabul qilinmagan taklif — ajralib tursin */
+.dl-staff-row.pending {
+  background: color-mix(in srgb, var(--amber) 7%, transparent);
+}
+
+.invite-chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid color-mix(in srgb, var(--amber) 32%, transparent);
+  vertical-align: middle;
+}
+
+/* ---------- Stollar: QR kod ---------- */
+
+.qr-preview {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  width: 260px;
+  margin: 0 auto;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+}
+
+.qr-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.qr-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.qr-link {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--muted);
+  font-size: 11.5px;
+  word-break: break-all;
+  text-align: left;
+}
+
+/* Stol kartochkasi ham shisha bo'lsin va QR belgisi burchakka yopishsin */
+.app-surface .dl-table-card {
+  position: relative;
+  background: color-mix(in srgb, var(--panel) 58%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.table-qr-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+@media (max-width: 520px) {
+  .qr-actions {
+    grid-template-columns: 1fr;
+  }
+  .qr-preview {
+    width: 100%;
+    max-width: 260px;
+  }
+}

@@ -1,0 +1,162 @@
+// TENANT SHABLONI — bu sxema HAR BIR restoran uchun ALOHIDA bazada ishlatiladi.
+// Masalan delish_db, dilkash_db... Har birida restaurant_id ustuni YO'Q,
+// chunki baza o'zi allaqachon bitta restoranga tegishli (to'liq izolyatsiya).
+//
+// Provisioning vaqtida bu sxema TENANT_DATABASE_URL ni tenant bazasiga
+// ko'rsatib push qilinadi (qarang: src/services/provisioning.js)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/tenant-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("TENANT_DATABASE_URL")
+}
+
+enum StaffRole {
+  admin
+  kitchen
+  waiter
+}
+
+enum OrderStatus {
+  new
+  accepted
+  preparing
+  ready
+  picked_up
+  delivered
+  paid
+  cancelled
+}
+
+// Buyurtma qaysi ofitsiantga topshirilgani va u javob berganmi —
+// bu status `OrderStatus`dan ALOHIDA yuritiladi, chunki "tayyor" buyurtma
+// hali hech kimga tayinlanmagan bo'lishi ham mumkin.
+enum WaiterAssignmentStatus {
+  none
+  pending
+  accepted
+  declined
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+model User {
+  id           String    @id @default(uuid())
+  fullName     String
+  phone        String    @unique // login: +998901234567 kabi formatda
+  email        String?           // ixtiyoriy, faqat aloqa uchun
+  passwordHash String
+  role         StaffRole
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  assignedOrders Order[] @relation("AssignedWaiter")
+}
+
+model StaffInvite {
+  id          String    @id @default(uuid())
+  phone       String    // taklif qilinayotgan xodimning raqami
+  fullName    String
+  role        StaffRole
+  token       String    @unique
+  isUsed      Boolean   @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}
+
+model RestaurantTable {
+  id          String    @id @default(uuid())
+  tableNumber Int       @unique
+  qrToken     String    @unique
+  isOccupied  Boolean   @default(false)
+  // Real-vaqtda "o'z-o'zini o'tqazish" uchun: 15 daqiqa ichida buyurtma
+  // bo'lmasa, background job stolni avtomatik bo'shatadi
+  occupiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  orders       Order[]
+  reservations TableReservation[]
+}
+
+model MenuCategory {
+  id        String     @id @default(uuid())
+  name      String
+  sortOrder Int        @default(0)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id           String       @id @default(uuid())
+  category     MenuCategory @relation(fields: [categoryId], references: [id])
+  categoryId   String
+  name         String
+  description  String?
+  price        Decimal
+  imageUrl     String?
+  isAvailable  Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  orderItems   OrderItem[]
+}
+
+model Order {
+  id               String                 @id @default(uuid())
+  table            RestaurantTable        @relation(fields: [tableId], references: [id])
+  tableId          String
+  clientName       String
+  status           OrderStatus            @default(new)
+  totalPrice       Decimal                @default(0)
+
+  assignedWaiter   User?                  @relation("AssignedWaiter", fields: [assignedWaiterId], references: [id])
+  assignedWaiterId String?
+  assignmentStatus WaiterAssignmentStatus @default(none)
+
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  items            OrderItem[]
+  statusLog        OrderStatusHistory[]
+}
+
+model OrderItem {
+  id               String   @id @default(uuid())
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId          String
+  menuItem         MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId       String
+  quantity         Int      @default(1)
+  note             String?
+  priceAtOrderTime Decimal
+}
+
+model OrderStatusHistory {
+  id            String      @id @default(uuid())
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String
+  status        OrderStatus
+  changedByUser String?
+  changedAt     DateTime    @default(now())
+}
+
+// Stol bron qilish (kelajakka sana/vaqt bilan)
+model TableReservation {
+  id              String            @id @default(uuid())
+  table           RestaurantTable?  @relation(fields: [tableId], references: [id])
+  tableId         String?           // null bo'lishi mumkin — admin keyin stol tayinlaydi
+  clientName      String
+  phone           String
+  partySize       Int               @default(2)
+  reservationDate DateTime          // sana + vaqt birga
+  status          ReservationStatus @default(pending)
+  note            String?
+  createdAt       DateTime          @default(now())
+}

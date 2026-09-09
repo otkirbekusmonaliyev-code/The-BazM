@@ -1,0 +1,43 @@
+{
+  "name": "restaurant-saas-backend",
+  "version": "0.1.0",
+  "description": "Restoranlar uchun ko'p-bazali (multi-tenant) buyurtma tizimi backend",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "master:generate": "prisma generate --schema=prisma/master/schema.prisma",
+    "master:migrate": "prisma migrate dev --schema=prisma/master/schema.prisma",
+    "master:deploy": "prisma migrate deploy --schema=prisma/master/schema.prisma",
+    "tenant:generate": "prisma generate --schema=prisma/tenant-template/schema.prisma",
+    "tenant:sync": "node scripts/syncTenants.js",
+    "db:generate": "npm run master:generate && npm run tenant:generate",
+    "provision": "node scripts/provisionTenant.js",
+    "seed": "node scripts/seedTenant.js",
+    "test:flow": "node scripts/smokeTest.js",
+    "test:edge": "node scripts/smokeTest2.js",
+    "test:bot": "node scripts/botTest.js",
+    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js",
+    "set-password": "node scripts/setPassword.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.1",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.12.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5",
+    "telegraf": "^4.16.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "prisma": "^5.19.1",
+    "socket.io-client": "^4.8.3"
+  }
+}

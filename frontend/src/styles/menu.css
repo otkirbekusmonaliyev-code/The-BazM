@@ -1,0 +1,444 @@
+/* ============================================================
+   MIJOZ ILOVASI — TAOM LIKOBCHASI, RO'YXAT VA ANIMATSIYALAR
+   client.css dan KEYIN yuklanadi.
+   ============================================================ */
+
+/* ---------- Taom rasmi / likobcha ---------- */
+
+.dish-plate {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  flex-shrink: 0;
+  background: var(--card-2);
+  isolation: isolate;
+}
+
+.dish-plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Ro'yxatdagi o'lcham — avvalgi 92x76 dan sezilarli kattaroq */
+.dish-plate-row {
+  width: 112px;
+  height: 112px;
+}
+
+.dish-plate-md {
+  width: 92px;
+  height: 92px;
+}
+
+.dish-plate-hero {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border-radius: 0;
+}
+
+/* Rasm yo'q — ataylab chizilgan likobcha */
+.dish-plate.is-empty {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+      circle at 50% 42%,
+      color-mix(in srgb, var(--tone-from) 55%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(150deg, var(--tone-to), color-mix(in srgb, var(--tone-to) 40%, #000));
+}
+
+.dish-plate-ring {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 6px rgba(255, 255, 255, 0.07);
+}
+
+.dish-plate-letter {
+  position: relative;
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  line-height: 1;
+}
+
+.dish-plate-row .dish-plate-letter { font-size: 40px; }
+.dish-plate-md .dish-plate-letter { font-size: 30px; }
+.dish-plate-hero .dish-plate-letter { font-size: 76px; }
+
+/* Ustidan o'tuvchi yorug'lik — "yaltiroq likobcha" hissi */
+.dish-plate-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.22), transparent 42%);
+}
+
+/* ============================================================
+   RO'YXATDAGI TAOM
+   ============================================================ */
+
+/* TAOM STANDART HOLATDA KO'RINADI. Bu qoidaning eng muhim jihati.
+   Avval teskarisi edi: taom CSS'da yashirin turib, uni JS ochardi — va
+   JS yoki animatsiya biror sababga ko'ra ishlamasa, menyu BO'SH qolardi.
+   Endi yashirish faqat ekrandan pastdagi taomlarga, faqat JS orqali
+   qo'shiladi. Eng yomon holatda animatsiya yo'qoladi, tarkib emas. */
+.c-dish {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: flex-start;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Faqat hali ko'rinishga kirmaganlar — klassni JS qo'yadi va JS oladi */
+.c-dish.pending {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-dish,
+  .c-dish.pending {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.c-dish.unavailable:not(.pending) {
+  opacity: 0.5;
+}
+
+.c-dish-photo {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 16px;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.c-dish-photo:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.c-dish.unavailable .dish-plate {
+  filter: grayscale(0.9) brightness(0.75);
+}
+
+.c-sold-tag {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(180, 40, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  white-space: nowrap;
+}
+
+.c-dish-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.c-dish-tap {
+  cursor: pointer;
+}
+
+.c-dish-name {
+  font-family: 'Fraunces', serif;
+  font-size: 17.5px;
+  line-height: 1.3;
+}
+
+.c-dish-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.c-dish-price {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 7px;
+}
+
+/* ---------- KATTA "Savatga" tugmasi ---------- */
+
+.c-add-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px 0 16px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--gold);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--gold) 32%, transparent);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+}
+
+.c-add-btn:active {
+  transform: scale(0.93);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--gold) 26%, transparent);
+}
+
+.c-add-plus {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+/* ---------- Kattalashtirilgan stepper ---------- */
+
+.c-stepper-lg {
+  align-self: flex-start;
+  padding: 4px;
+  border-radius: 14px;
+}
+
+.c-stepper-lg button {
+  width: 38px;
+  height: 36px;
+  border-radius: 11px;
+  font-size: 21px;
+}
+
+.c-stepper-lg .c-stepper-count {
+  min-width: 32px;
+  font-size: 16px;
+}
+
+/* ---------- Savatga uchayotgan nusxa ---------- */
+
+.fly-ghost {
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+  will-change: transform, opacity;
+}
+
+/* Savat tugmasi "qabul qildim" deb seskanadi */
+.c-cart-bar .c-btn.caught {
+  animation: cartCatch 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cartCatch {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+
+/* Savat paneli prujinali chiqadi */
+.c-cart-bar {
+  animation: cartBarIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cartBarIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.c-cart-count.pop {
+  animation: countPop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes countPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Qidiruv ---------- */
+
+.c-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin: 10px 0 2px;
+  padding: 0 12px;
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  animation: searchIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes searchIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.c-search span {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.c-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.c-search input:focus {
+  outline: none;
+}
+
+.c-search button {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 4px;
+}
+
+.c-search-count {
+  padding: 8px 2px 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.c-empty-search {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--muted);
+  animation: searchIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.c-empty-icon {
+  font-size: 40px;
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+
+.c-empty-search b {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.c-empty-search span {
+  font-size: 13px;
+}
+
+/* ---------- Sarlavhadagi yumaloq tugmalar ---------- */
+
+.c-icon-btn {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.c-icon-btn:active {
+  transform: scale(0.88);
+}
+
+.c-icon-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---------- Bo'lim sarlavhasi ---------- */
+
+.c-cat-title {
+  position: relative;
+}
+
+/* Sarlavha oldidagi oltin chiziqcha — bo'lim boshlanishini bildiradi */
+.c-cat-title::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 4px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--gold);
+  transform: translateY(-50%);
+  opacity: 0.75;
+}
+
+/* ---------- Bo'lim tugmalari ---------- */
+
+.c-pill {
+  transition: background 0.28s ease, color 0.28s ease,
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.c-pill:active {
+  transform: scale(0.94);
+}
+
+.c-pill.active {
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--gold) 30%, transparent);
+}
+
+/* ---------- Savat paneli chiqqanda ro'yxat ostida qolmasin ---------- */
+
+.has-cart .c-menu {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+.has-cart .c-fab {
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 360px) {
+  .dish-plate-row {
+    width: 92px;
+    height: 92px;
+  }
+  .c-add-btn {
+    height: 40px;
+    padding: 0 16px 0 13px;
+    font-size: 14px;
+  }
+}

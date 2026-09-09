@@ -1,0 +1,364 @@
+/* ============================================================
+   WAITER MOBILE — Ofitsiant paneli (telefon uchun)
+   Delish palitrasi, lekin funksional: bitta ustunli ro'yxat,
+   katta stol raqami va butun kartochka kengligidagi tugma.
+   ============================================================ */
+
+.app-waiter {
+  --bg: #171c16;
+  --card: #1f251d;
+  --card-2: #252c22;
+  --border: #2c3423;
+  --text: #f3efe4;
+  --muted: #a3a897;
+  --gold: #c6a05c;
+  --amber: #c6a05c;
+  --amber-soft: rgba(198, 160, 92, 0.14);
+  --on-accent: #171c16;
+  --green: #4ade80;
+  --red: #ef4444;
+  --panel: #1f251d;
+  --panel-2: #252c22;
+  --border-soft: #232a1b;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='light'] .app-waiter {
+  --bg: #fdfbf6;
+  --card: #ffffff;
+  --card-2: #f3f0e6;
+  --border: #e0dac9;
+  --border-soft: #ebe6d9;
+  --text: #22271d;
+  --muted: #6d7263;
+  --panel: #ffffff;
+  --panel-2: #f3f0e6;
+  /* Stol raqami va miqdorlar oq fonda ham aniq ko'rinsin */
+  --gold: #8a6420;
+  --amber: #8a6420;
+  --amber-soft: rgba(138, 100, 32, 0.13);
+  --on-accent: #ffffff;
+  --green: #15803d;
+  --red: #b3261e;
+}
+
+/* ---------- Yuqori panel ---------- */
+
+.w-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 58px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.w-topbar h1 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.w-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.w-live::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.w-live.off::before {
+  background: var(--red);
+}
+
+.w-iconbtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+}
+
+/* ---------- Ro'yxat ---------- */
+
+.w-list {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 620px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.w-empty {
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.w-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.w-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: bounceIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.w-card.leaving {
+  animation: waiterCardOut 0.32s ease forwards;
+}
+
+@keyframes waiterCardOut {
+  to {
+    transform: translateY(24px);
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
+.w-card-head {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.w-table-no {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.w-client {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.w-since {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.w-items {
+  padding: 12px 16px;
+}
+
+.w-item {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.w-item-qty {
+  min-width: 34px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.w-item-note {
+  display: block;
+  font-size: 13px;
+  color: var(--gold);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.w-total {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.w-total b {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  font-size: 15px;
+}
+
+/* Butun kartochka kengligidagi katta tugma — 56px+ */
+.w-action {
+  width: 100%;
+  height: 58px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: var(--green);
+  color: var(--on-accent);
+  transition: filter 0.15s ease;
+}
+
+.w-action:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* ---------- Taklif modali (to'liq ekran) ---------- */
+
+.w-offer {
+  background: var(--card);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.w-offer-head {
+  padding: 20px 20px 14px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.w-offer-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  animation: offerPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes offerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.w-offer-table {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.w-offer-client {
+  font-size: 17px;
+  margin-top: 8px;
+}
+
+.w-offer-items {
+  padding: 16px 20px;
+  max-height: 38vh;
+  overflow-y: auto;
+}
+
+.w-offer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+
+.w-offer-btn {
+  height: 64px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.w-offer-btn.accept {
+  background: #16a34a;
+  color: #fff;
+}
+
+.w-offer-btn.skip {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.w-offer-btn:disabled {
+  filter: grayscale(0.5);
+}
+
+/* ---------- Chaqiruv xabari ---------- */
+
+.w-call-banner {
+  margin: 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--amber-soft);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+  animation: slideDownIn 0.25s ease;
+}
+
+/* ---------- Login/holat ---------- */
+
+.w-status-strip {
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--card-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.w-status-strip.busy {
+  color: var(--gold);
+  background: var(--amber-soft);
+}
+
+/* ---------- Katta ekranlar ----------
+   Ofitsiant paneli telefon uchun, lekin planshetda ham ochilishi mumkin.
+   Ro'yxat allaqachon markazda (620px), taklif oynasi ham shunga moslanadi. */
+
+@media (min-width: 700px) {
+  .w-topbar {
+    padding-left: max(14px, calc(50% - 310px));
+    padding-right: max(14px, calc(50% - 310px));
+  }
+
+  .sheet-box.w-offer {
+    width: min(560px, 100%);
+    margin: 0 auto;
+    border-radius: 22px;
+    margin-bottom: 24px;
+  }
+}

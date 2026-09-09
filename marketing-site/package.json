@@ -1,0 +1,18 @@
+{
+  "name": "bazm-marketing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bazm platformasining ochiq marketing sayti (SEO uchun Next.js SSR)",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "bazm-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bazm — restoranlar uchun ko'p-bazali (multi-tenant) SaaS buyurtma platformasi",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install && npm --prefix marketing-site install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:marketing": "npm --prefix marketing-site run dev",
+    "build": "npm --prefix frontend run build && npm --prefix marketing-site run build",
+    "test": "npm --prefix backend test",
+    "seed": "npm --prefix backend run seed",
+    "provision": "npm --prefix backend run provision"
+  }
+}

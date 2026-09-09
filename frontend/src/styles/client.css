@@ -1,0 +1,867 @@
+/* ============================================================
+   DELISH MENU — Mijoz ilovasi (Telegram Mini App)
+   Elegant, fine-dining: Fraunces taom nomlari, oltin aksent,
+   telefon ekrani uchun bir ustunli oqim.
+   ============================================================ */
+
+.app-client {
+  --bg: #171c16;
+  --card: #1f251d;
+  --card-2: #252c22;
+  --text: #f3efe4;
+  --muted: #a3a897;
+  --gold: #c6a05c;
+  --rust: #a85a3a;
+  --on-accent: #171c16; /* aksent to'ldirish ustidagi matn */
+  --border: rgba(243, 239, 228, 0.09);
+  --amber: #c6a05c;
+  --amber-soft: rgba(198, 160, 92, 0.14);
+  --panel: #1f251d;
+  --panel-2: #252c22;
+  --border-soft: rgba(243, 239, 228, 0.06);
+  --red: #d97066;
+  --green: #6fbf73;
+  --muted-rgb: 163, 168, 151;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+[data-theme='light'] .app-client {
+  --bg: #fdfbf6;
+  --card: #ffffff;
+  --card-2: #f4f1e8;
+  --text: #22271d;
+  --muted: #6d7263;
+  --border: rgba(34, 39, 29, 0.1);
+  --border-soft: rgba(34, 39, 29, 0.06);
+  --panel: #ffffff;
+  --panel-2: #f4f1e8;
+  /* Taom narxlari va sarlavhalar oq fonda ham aniq o'qilishi uchun */
+  --gold: #8a6420;
+  --amber: #8a6420;
+  --amber-soft: rgba(138, 100, 32, 0.13);
+  --rust: #8c4526;
+  --on-accent: #ffffff;
+  --green: #15803d;
+  --red: #b3261e;
+}
+
+.app-client .serif,
+.app-client h1,
+.app-client h2 {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+/* ---------- Ekranlar orasidagi silliq o'tish ---------- */
+
+.c-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.c-screen.enter-right {
+  animation: enterRight 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.c-screen.enter-left {
+  animation: enterLeft 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes enterRight {
+  from { transform: translateX(100%); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes enterLeft {
+  from { transform: translateX(-100%); opacity: 0.4; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ---------- Kirish ekrani ---------- */
+
+.c-welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 28px 24px calc(28px + env(safe-area-inset-bottom, 0));
+  background:
+    radial-gradient(700px 380px at 50% 0%, rgba(198, 160, 92, 0.13), transparent 70%),
+    var(--bg);
+}
+
+.c-welcome-mark {
+  font-family: 'Fraunces', serif;
+  font-size: 38px;
+  color: var(--gold);
+  text-align: center;
+  line-height: 1.15;
+}
+
+.c-welcome-sub {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 10px;
+  margin-bottom: 34px;
+}
+
+.c-table-badge {
+  margin: 0 auto 28px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.c-input {
+  width: 100%;
+  height: 54px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  transition: border-color 0.18s ease;
+}
+
+.c-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.c-input::placeholder {
+  color: var(--muted);
+}
+
+.c-btn {
+  width: 100%;
+  height: 54px;
+  border-radius: 14px;
+  background: var(--gold);
+  color: var(--on-accent);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: filter 0.15s ease, transform 0.12s ease, background 0.25s ease;
+}
+
+.c-btn:hover:not(:disabled) { filter: brightness(1.07); }
+.c-btn:active:not(:disabled) { transform: scale(0.985); }
+
+.c-btn.flash-success {
+  background: var(--green);
+  color: var(--on-accent);
+}
+
+.c-btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* ---------- Bo'sh stol tanlash ---------- */
+
+.c-tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.c-table-btn {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: border-color 0.18s ease, transform 0.15s ease;
+}
+
+.c-table-btn:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.c-table-btn.selected {
+  border-color: var(--gold);
+  background: var(--amber-soft);
+}
+
+.c-table-btn b {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  color: var(--gold);
+}
+
+.c-table-btn span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- Menyu sarlavhasi ---------- */
+
+.c-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.c-header-top {
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.c-header-title {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  color: var(--gold);
+}
+
+.c-header-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.c-back {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+/* ---------- Kategoriya pill'lari ---------- */
+
+.c-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 16px 12px;
+  scrollbar-width: none;
+}
+
+.c-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.c-pill {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.c-pill.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--on-accent);
+}
+
+/* ---------- Menyu ro'yxati ---------- */
+
+.c-menu {
+  flex: 1;
+  padding: 16px 16px 130px;
+}
+
+.c-cat-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  margin: 22px 0 12px;
+  scroll-margin-top: 116px;
+}
+
+/* Oxirgi kategoriya ham sarlavha ostidagi "sezgich chizig'i"ga yetib borishi
+   uchun ekran balandligicha joy egallaydi — aks holda unga scroll qilib
+   bo'lmagani sababli uning pill'i hech qachon faollashmasdi */
+.c-menu > section:last-child {
+  min-height: calc(100vh - 190px);
+}
+
+.c-cat-title:first-child {
+  margin-top: 4px;
+}
+
+.c-dish {
+  display: flex;
+  gap: 13px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: flex-start;
+}
+
+.c-dish.unavailable {
+  opacity: 0.45;
+}
+
+.c-dish.unavailable .c-dish-img {
+  filter: grayscale(1);
+}
+
+.c-dish-body {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.c-dish-name {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.c-dish-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.c-dish-price {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 7px;
+}
+
+.c-dish-right {
+  width: 92px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.c-dish-img {
+  width: 92px;
+  height: 76px;
+  border-radius: 13px;
+  object-fit: cover;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+}
+
+.c-dish-img.placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+}
+
+.c-sold-out {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--rust);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------- Qo'shish tugmasi va stepper ---------- */
+
+.c-add {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--gold);
+  color: var(--on-accent);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.c-add.bounce {
+  animation: addBounce 0.25s ease;
+}
+
+.c-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 3px;
+  animation: bounceIn 0.22s ease;
+}
+
+.c-stepper button {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.c-stepper-count {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+  height: 20px;
+  position: relative;
+}
+
+.c-stepper-count span {
+  display: block;
+  animation: countIn 0.15s ease;
+}
+
+@keyframes countIn {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ---------- Suzuvchi tugmalar va savat paneli ---------- */
+
+.c-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0));
+  z-index: 50;
+  height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--card-2);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.c-cart-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 55;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  animation: slideUpBar 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes slideUpBar {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.c-cart-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(23, 28, 22, 0.22);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.c-cart-count.pop {
+  animation: popNumber 0.2s ease;
+}
+
+/* ---------- Taom modali ---------- */
+
+.c-dish-sheet {
+  background: var(--card);
+  color: var(--text);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+}
+
+.c-sheet-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--muted);
+  opacity: 0.4;
+  margin: 10px auto;
+}
+
+.c-sheet-img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  background: var(--card-2);
+}
+
+.c-sheet-img.placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 56px;
+}
+
+.c-sheet-body {
+  padding: 18px 20px 20px;
+}
+
+.c-sheet-name {
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.c-sheet-desc {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.c-sheet-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 14px;
+}
+
+.c-note-input {
+  width: 100%;
+  min-height: 68px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text);
+  font-size: 14px;
+  resize: vertical;
+  margin-top: 14px;
+}
+
+.c-note-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* ---------- Savat ekrani ---------- */
+
+.c-cart-list {
+  flex: 1;
+  padding: 12px 16px 140px;
+}
+
+.c-cart-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: center;
+}
+
+.c-cart-item-name {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+}
+
+.c-cart-item-note {
+  font-size: 12.5px;
+  color: var(--gold);
+  font-style: italic;
+  margin-top: 3px;
+}
+
+.c-summary {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 15px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.c-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.c-summary-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.c-summary-total b {
+  color: var(--gold);
+}
+
+/* ---------- Kuzatuv ekrani ---------- */
+
+.c-track {
+  flex: 1;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0));
+  display: flex;
+  flex-direction: column;
+}
+
+.c-track-emoji {
+  font-size: 56px;
+  text-align: center;
+  margin-bottom: 14px;
+  transition: transform 0.3s ease;
+}
+
+.c-track-status {
+  font-family: 'Fraunces', serif;
+  font-size: 27px;
+  text-align: center;
+}
+
+.c-track-status.swapping {
+  animation: statusSwap 0.3s ease;
+}
+
+@keyframes statusSwap {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.c-track-hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.c-steps {
+  margin: 34px 0 10px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.c-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+}
+
+.c-step-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--card-2);
+  border: 2px solid var(--border);
+  position: relative;
+  z-index: 2;
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+
+.c-step.done .c-step-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.c-step.current .c-step-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.c-step.current .c-step-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.c-step-label {
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.c-step.done .c-step-label,
+.c-step.current .c-step-label {
+  color: var(--text);
+}
+
+.c-step-line {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  z-index: 1;
+  transition: background 0.4s ease;
+}
+
+.c-step.done .c-step-line {
+  background: var(--gold);
+}
+
+.c-step:last-child .c-step-line {
+  display: none;
+}
+
+.c-order-card {
+  margin-top: 26px;
+  padding: 16px;
+  border-radius: 15px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.c-order-card h3 {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.c-order-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+.c-past-orders {
+  margin-top: 22px;
+}
+
+.c-past-order {
+  padding: 13px 16px;
+  border-radius: 13px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.c-loading {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.c-error-box {
+  margin: 16px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  background: rgba(217, 112, 102, 0.12);
+  border: 1px solid rgba(217, 112, 102, 0.35);
+  color: var(--red);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------- Katta ekranlar ----------
+   Mijoz ilovasi telefon uchun mo'ljallangan, lekin QR havolasi noutbukda
+   ham ochilishi mumkin. Bunday holatda kontentni telefon kengligida,
+   markazda ushlab turamiz — aks holda taomlar butun ekran bo'ylab
+   cho'zilib, o'qish qiyinlashadi. */
+
+@media (min-width: 620px) {
+  .c-screen {
+    width: min(560px, 100%);
+    margin: 0 auto;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    min-height: 100vh;
+  }
+
+  .c-cart-bar,
+  .c-fab {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(560px, 100%);
+  }
+
+  .c-fab {
+    /* Suzuvchi tugma o'ng chekkada qolsin, lekin konteyner ichida */
+    left: auto;
+    right: max(16px, calc(50% - 264px));
+    transform: none;
+    width: auto;
+  }
+
+  .c-cart-bar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .sheet-box {
+    width: min(560px, 100%);
+    margin: 0 auto;
+  }
+}

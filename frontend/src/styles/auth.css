@@ -1,0 +1,348 @@
+/* ============================================================
+   KIRISH SAHIFASI
+   Fonda 3D sahna, ustida ikkita shisha panel:
+   chapda ish joyi tanlanadi, o'ngda telefon va parol.
+   glass.css dan KEYIN yuklanadi.
+   ============================================================ */
+
+/* 3D sahna eng orqa qatlamda. Ustidagi shisha panellar uni yumshatadi,
+   shuning uchun matn har doim o'qiladi. Bosishga umuman aralashmaydi. */
+.auth-scene-host {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  animation: sceneIn 2.4s var(--ease-glass);
+}
+
+.auth-scene-host .three-banner {
+  width: 100%;
+  height: 100%;
+}
+
+[data-theme='light'] .auth-scene-host {
+  opacity: 0.4;
+}
+
+@keyframes sceneIn {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+/* Tepa panel ikki ustun kengligida */
+.auth-topbar {
+  width: min(980px, 100%);
+}
+
+/* Yagona kartali ekranlarda (404, taklif, to'xtatilgan) torroq */
+.auth-shell-center .auth-topbar {
+  width: min(420px, 100%);
+}
+
+/* ---------- Ikki ustun ---------- */
+
+.auth-split {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+  margin: 26px 0;
+  transition: transform 0.5s var(--ease-glass), opacity 0.4s ease, filter 0.4s ease;
+}
+
+.auth-split .auth-card {
+  max-width: none;
+  margin: 0;
+}
+
+/* Ikkala karta biroz turli vaqtda va turli tomondan chiqadi */
+.auth-picker {
+  animation: cardInLeft 0.75s var(--ease-glass) backwards;
+}
+
+.auth-form {
+  animation: cardInRight 0.75s var(--ease-glass) 0.09s backwards;
+}
+
+@keyframes cardInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-26px) scale(0.97);
+    filter: blur(10px);
+  }
+}
+
+@keyframes cardInRight {
+  from {
+    opacity: 0;
+    transform: translateX(26px) scale(0.97);
+    filter: blur(10px);
+  }
+}
+
+/* Muvaffaqiyatli kirishdan keyin ikkala karta birga "uchib" ketadi */
+.auth-split.leaving {
+  opacity: 0;
+  transform: translateY(-18px) scale(1.03);
+  filter: blur(8px);
+}
+
+.auth-side-title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.auth-side-sub {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 6px;
+  margin-bottom: 18px;
+}
+
+/* ---------- Restoran / Kafe almashtirgichi ---------- */
+
+.type-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 13px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: color-mix(in srgb, var(--panel-2) 55%, transparent);
+  margin-bottom: 14px;
+}
+
+/* Faol tanlov ostidagi belgi — sirg'aladi, sakramaydi */
+.type-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 10px;
+  background: var(--amber);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--amber) 35%, transparent);
+  transition: transform 0.45s var(--ease-glass);
+}
+
+.type-thumb.right {
+  transform: translateX(100%);
+}
+
+.type-option {
+  position: relative;
+  z-index: 1;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.3s ease;
+}
+
+.type-option.active {
+  color: var(--on-accent);
+}
+
+/* ---------- Qidiruv ---------- */
+
+.auth-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.auth-search:focus-within {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 18%, transparent);
+}
+
+.auth-search-icon {
+  padding: 0 4px 0 13px;
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.auth-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.auth-search input:focus {
+  outline: none;
+}
+
+.auth-search-spin {
+  margin-right: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Topilgan muassasalar ---------- */
+
+.place-list {
+  margin-top: 12px;
+  max-height: 264px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--panel-2) 45%, transparent);
+  text-align: left;
+  animation: rowIn 0.42s var(--ease-glass) backwards;
+  transition: transform 0.25s var(--ease-glass), border-color 0.25s ease, background 0.25s ease;
+}
+
+@keyframes rowIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+.place-row:hover {
+  transform: translateX(3px);
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+}
+
+.place-row.selected {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.place-row b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.place-row small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.place-badge {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: color-mix(in srgb, var(--amber) 16%, transparent);
+}
+
+/* Tanlanganini bildiruvchi belgi — tanlanmaganda ko'rinmaydi */
+.place-tick {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  color: var(--amber);
+  font-weight: 800;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.28s ease, transform 0.28s var(--ease-glass);
+}
+
+.place-row.selected .place-tick {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.place-empty {
+  padding: 26px 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ---------- O'ng ustunda tanlangan muassasa ---------- */
+
+.chosen-place {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  margin-bottom: 16px;
+  background: var(--amber-soft);
+  border: 1px solid color-mix(in srgb, var(--amber) 34%, transparent);
+  animation: chosenIn 0.45s var(--ease-glass);
+}
+
+@keyframes chosenIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+.chosen-place b {
+  display: block;
+  font-size: 14.5px;
+}
+
+.chosen-place small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+@media (max-width: 860px) {
+  .auth-split {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+  }
+  /* Tor ekranda ikkala karta ham pastdan chiqadi */
+  .auth-picker,
+  .auth-form {
+    animation-name: authCardIn;
+  }
+  .place-list {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-scene-host {
+    opacity: 0.35;
+  }
+}
+
+/* 3D sahna doimiy harakatda — harakat kamaytirilgan bo'lsa butunlay olinadi */
+@media (prefers-reduced-motion: reduce) {
+  .auth-scene-host {
+    display: none;
+  }
+}

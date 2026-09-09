@@ -1,0 +1,636 @@
+/* ============================================================
+   DELISH ADMIN — Restoran admin paneli
+   Iliq, brendli, lekin CRM tuzilishida.
+   Umumiy .btn / .field / .status-badge klasslari bazm.css'da
+   yozilgan va faqat CSS o'zgaruvchilarga tayanadi — shuning uchun
+   bu yerda o'sha o'zgaruvchilarning boshqa qiymatlarini berish
+   kifoya, tugmalar avtomatik ravishda oltin rangda chiqadi.
+   ============================================================ */
+
+.app-delish {
+  --bg: #12160f;
+  --panel: #191f14;
+  --panel-2: #1f2618;
+  --border: #2c3423;
+  --border-soft: #232a1b;
+  --text: #f3efe4;
+  --muted: #8b927d;
+  --gold: #c6a05c;
+  --amber: #c6a05c; /* .btn-primary shu o'zgaruvchidan foydalanadi */
+  --amber-soft: rgba(198, 160, 92, 0.14);
+  --on-accent: #12160f; /* aksent to'ldirish ustidagi matn */
+  --rust: #a85a3a;
+  --green: #6fbf73;
+  --blue: #6c9ed4;
+  --red: #d97066;
+  --shadow: 0 20px 44px rgba(0, 0, 0, 0.45);
+
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+}
+
+[data-theme='light'] .app-delish {
+  --bg: #faf8f2;
+  --panel: #ffffff;
+  --panel-2: #f3f0e6;
+  --border: #ded8c6;
+  --border-soft: #eae5d8;
+  --text: #1e2416;
+  --muted: #6d7263;
+  /* Yorqin oltin oq fonda o'qilmaydi (kontrast ~2.5:1) — kunduzgi rejimda
+     to'qroq oltin, to'ldirishlar ustidagi matn esa oq bo'ladi */
+  --gold: #8a6420;
+  --amber: #8a6420;
+  --amber-soft: rgba(138, 100, 32, 0.13);
+  --on-accent: #ffffff;
+  --green: #15803d;
+  --blue: #1d4ed8;
+  --red: #b91c1c;
+  --shadow: 0 16px 36px rgba(40, 38, 24, 0.12);
+}
+
+.app-delish h1,
+.app-delish h2,
+.app-delish .serif {
+  font-family: 'Fraunces', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+.app-delish .btn-primary {
+  color: var(--on-accent);
+}
+
+/* ---------- Layout ---------- */
+
+.dl-shell {
+  display: grid;
+  grid-template-columns: 226px 1fr;
+  min-height: 100vh;
+}
+
+.dl-side {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 18px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.dl-brand {
+  padding: 6px 12px 20px;
+}
+
+.dl-brand b {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  color: var(--gold);
+  display: block;
+}
+
+.dl-brand span {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dl-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dl-nav-link:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.dl-nav-link.active {
+  background: var(--amber-soft);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.dl-nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.dl-side-foot {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dl-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dl-topbar {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.dl-topbar h1 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.dl-content {
+  padding: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.live-dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(111, 191, 115, 0.6);
+  animation: livePulse 2s infinite;
+}
+
+.live-dot.off::before {
+  background: var(--red);
+  animation: none;
+}
+
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(111, 191, 115, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(111, 191, 115, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(111, 191, 115, 0); }
+}
+
+/* ---------- Panel / karta ---------- */
+
+.dl-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dl-panel-head {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dl-panel-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.dl-panel-body {
+  padding: 18px;
+}
+
+.dl-grid-2 {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1050px) {
+  .dl-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Banner ---------- */
+
+.dl-banner {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--panel), var(--bg));
+  margin-bottom: 16px;
+}
+
+.three-banner.banner-food.three-fallback {
+  background: linear-gradient(115deg, rgba(198, 160, 92, 0.2), rgba(168, 90, 58, 0.12) 55%, transparent);
+}
+
+.dl-banner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 24px;
+  pointer-events: none;
+}
+
+.dl-banner-overlay h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+}
+
+.dl-banner-overlay p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* ---------- KPI ---------- */
+
+.dl-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dl-kpi {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.dl-kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.dl-kpi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 25px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+/* ---------- Jonli buyurtmalar ---------- */
+
+.dl-order-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.dl-order-row:last-child {
+  border-bottom: none;
+}
+
+.dl-order-row.fresh {
+  animation: orderIn 0.25s ease, orderFlash 1s ease-out;
+}
+
+@keyframes orderIn {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes orderFlash {
+  from { background: rgba(198, 160, 92, 0.15); }
+  to { background: transparent; }
+}
+
+.dl-table-chip {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--gold);
+}
+
+.dl-status-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dl-status-pill.new { background: rgba(217, 112, 102, 0.18); color: var(--red); }
+.dl-status-pill.accepted { background: rgba(108, 158, 212, 0.18); color: var(--blue); }
+.dl-status-pill.preparing { background: rgba(198, 160, 92, 0.18); color: var(--gold); }
+.dl-status-pill.ready { background: rgba(111, 191, 115, 0.18); color: var(--green); }
+.dl-status-pill.picked_up { background: rgba(111, 191, 115, 0.14); color: var(--green); }
+.dl-status-pill.delivered { background: rgba(139, 146, 125, 0.18); color: var(--muted); }
+.dl-status-pill.paid { background: rgba(111, 191, 115, 0.2); color: var(--green); }
+.dl-status-pill.cancelled { background: rgba(139, 146, 125, 0.14); color: var(--muted); }
+
+/* ---------- Toggle (mavjud/tugagan) ---------- */
+
+.dl-toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dl-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left 0.15s ease, background 0.15s ease;
+}
+
+.dl-toggle.on {
+  background: rgba(111, 191, 115, 0.35);
+}
+
+.dl-toggle.on::after {
+  left: 20px;
+  background: var(--green);
+}
+
+/* ---------- Menyu boshqaruvi ---------- */
+
+.dl-menu-cat {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.dl-menu-cat-head {
+  padding: 13px 16px;
+  background: var(--panel-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dl-menu-cat-head h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+}
+
+.dl-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.dl-item-row:last-child {
+  border-bottom: none;
+}
+
+.dl-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.dl-item-thumb.placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+/* ---------- Stollar xaritasi ---------- */
+
+.dl-tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
+  gap: 12px;
+}
+
+.dl-table-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 14px 12px;
+  text-align: center;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.dl-table-card:hover {
+  transform: translateY(-2px);
+}
+
+.dl-table-card.occupied {
+  border-color: var(--gold);
+  background: var(--amber-soft);
+}
+
+.dl-table-card b {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.dl-table-card small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 4px;
+  min-height: 16px;
+}
+
+/* ---------- Bronlar ---------- */
+
+.dl-res-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.dl-res-card.fresh {
+  animation: bounceIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dl-res-when {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ---------- Xodimlar ---------- */
+
+.dl-staff-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.dl-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.dl-presence {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.dl-presence.online {
+  background: var(--green);
+}
+
+/* ---------- Savdo grafigi ---------- */
+
+.dl-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 130px;
+  padding-top: 8px;
+}
+
+.dl-chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.dl-chart-bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--gold), rgba(198, 160, 92, 0.3));
+  transition: height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dl-chart-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ---------- Xodim login ---------- */
+
+.dl-list-empty {
+  padding: 38px 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .dl-shell {
+    grid-template-columns: 1fr;
+  }
+  .dl-side {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .dl-brand {
+    padding: 0 14px 0 4px;
+  }
+  .dl-brand span {
+    display: none;
+  }
+  .dl-side-foot {
+    display: none;
+  }
+  .dl-nav-link {
+    white-space: nowrap;
+  }
+}
