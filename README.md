@@ -31,9 +31,8 @@ SEO uchun server-side rendering kerak (Next.js).
 ### Marshrutlar
 
 ```
-/                              kirish sahifasi (qaysi panelga o'tish)
+/                              YAGONA kirish sahifasi (barcha rollar uchun)
 /super-admin                   platforma egasi paneli
-/:slug/login                   xodimlar kirishi
 /:slug/accept-invite/:token    taklif havolasi — parol o'rnatish
 /:slug/admin                   restoran admin paneli
 /:slug/kitchen                 oshxona ekrani (planshet)
@@ -149,8 +148,14 @@ faqat 9 ta raqamni terasiz (masalan `94 109 33 50`).
 | Ofitsiant (Nodira) | `90 999 88 55` | `ofitsiant123` | `/delish/waiter` |
 | Mijoz | parol yo'q — QR yoki bot orqali | — | `/t/delish/<qrToken>` yoki `/m/delish` |
 
-Xodim panellari `/delish/login` orqali ochiladi — kirgandan so'ng rolingizga
-qarab avtomatik ravishda kerakli ekranga o'tasiz.
+Butun platformada **bitta kirish sahifasi** bor — `/`. Alohida "xodim
+kirishi" sahifasi yo'q va rol tanlanmaydi: telefon raqami kimga tegishli
+ekanini server o'zi aniqlab, kerakli panelga yo'naltiradi.
+
+Kirish sahifasining chap tomonida ish joyini tanlash mumkin: avval turi
+(restoran yoki kafe), so'ng nomi bo'yicha qidiruv. Tanlansa, kirish o'sha
+muassasa doirasida tekshiriladi. Tanlanmasa ham bo'ladi — u holda tizim
+raqamdan kelib chiqib o'zi topadi (platforma egasi shu yo'ldan kiradi).
 
 Parolni unutsangiz:
 
@@ -259,6 +264,18 @@ ishga tushmaydi, server bemalol ishlaydi.
 Bot bazaga to'g'ridan-to'g'ri emas, o'z backend'imizning HTTP API'si orqali
 murojaat qiladi — shu bilan barcha tekshiruvlar bitta joyda, controller'larda
 qoladi.
+
+Bot o'zbekcha va ruscha ishlaydi (til birinchi kirishda tanlanadi), menyuni
+o'zi ko'rsata oladi, bo'sh stolni band qiladi, buyurtma holatini aytadi va
+bron qilishni bosqichma-bosqich — tugmalar va "kontaktni ulashish" orqali —
+o'tkazadi.
+
+**MUHIM:** Telegram Mini App tugmasi FAQAT `https` manzil bilan ishlaydi va
+`localhost` manzilini umuman qabul qilmaydi (`Wrong HTTP URL`). Shuning uchun
+development'da bot havolani tugma emas, **matn** ko'rinishida beradi — bu
+kutilgan xatti-harakat. Haqiqiy tugma uchun `APP_URL` ni https manzilga
+qo'ying (domen olguningizcha `ngrok http 5173` yoki `cloudflared tunnel`
+yetarli).
 
 ---
 
