@@ -15,6 +15,7 @@ import './styles/glass.css';
 import './styles/auth.css';
 import './styles/panels.css';
 import './styles/menu.css';
+import './styles/admin.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

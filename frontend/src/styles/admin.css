@@ -1,0 +1,350 @@
+/* ============================================================
+   RESTORAN ADMIN PANELI — dizayn ustqurmasi
+   delish-admin.css, glass.css va panels.css dan KEYIN yuklanadi.
+
+   Maqsad: marketing saytidagi hissiyot — chuqurlik, shisha, oltin
+   urg'u va yumshoq harakat — lekin ish paneliga mos darajada.
+   Kun bo'yi ishlanadigan ekran, shuning uchun:
+     - matn kontrasti hech qayerda pasaymaydi,
+     - harakatlar qisqa (0.2–0.5s) va faqat javob sifatida,
+     - takrorlanuvchi (cheksiz) animatsiya yo'q — "jonli" nuqtadan boshqa.
+   ============================================================ */
+
+/* ---------- Fon: yumshoq oltin-zaytun yorug'lik ---------- */
+
+.app-delish .aurora-blob.a1 {
+  background: radial-gradient(circle, var(--gold), transparent 66%);
+  opacity: 0.34;
+}
+
+.app-delish .aurora-blob.a2 {
+  background: radial-gradient(circle, var(--green), transparent 70%);
+  opacity: 0.16;
+}
+
+[data-theme='light'] .app-delish .aurora-blob.a1 {
+  opacity: 0.16;
+}
+[data-theme='light'] .app-delish .aurora-blob.a2 {
+  opacity: 0.1;
+}
+
+/* Chetlarda yengil vinyetka — markazdagi ish maydoni ajralib tursin */
+.app-delish::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.28));
+}
+
+[data-theme='light'] .app-delish::after {
+  background: radial-gradient(120% 90% at 50% 40%, transparent 60%, rgba(60, 50, 30, 0.07));
+}
+
+/* ---------- Panel: shisha + qirrada yorug'lik ---------- */
+
+.app-surface .dl-panel {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 18px 44px rgba(0, 0, 0, 0.26);
+}
+
+/* Saytdagi kabi: burchakdan burchakka o'tuvchi nozik yorug'lik.
+   Aynan shu chiziq tekis fonni "shisha"ga aylantiradi. */
+.app-surface .dl-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 34%,
+    transparent 70%,
+    color-mix(in srgb, var(--gold) 10%, transparent)
+  );
+}
+
+[data-theme='light'] .app-surface .dl-panel::before {
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.75),
+    transparent 38%,
+    transparent 72%,
+    color-mix(in srgb, var(--gold) 7%, transparent)
+  );
+}
+
+.app-surface .dl-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Bo'lim sarlavhasi — saytdagi kabi serif */
+.app-delish .dl-panel-head h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 16.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.app-delish .dl-panel-head {
+  border-bottom-color: color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* ---------- KPI kartalari ---------- */
+
+.app-surface .dl-kpi {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 17px 18px 18px;
+}
+
+/* Tepadagi oltin chiziq — sichqoncha tekkanda kengayadi */
+.app-surface .dl-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  width: 26px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--gold);
+  opacity: 0.75;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+.app-surface .dl-kpi:hover::before {
+  width: calc(100% - 36px);
+  opacity: 1;
+}
+
+.app-delish .dl-kpi-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-top: 9px;
+  /* Raqam oltin gradient bilan — panelning eng muhim ma'lumoti */
+  background: linear-gradient(150deg, var(--text), color-mix(in srgb, var(--gold) 70%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app-delish .dl-kpi-label {
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ---------- Yon ustun ---------- */
+
+.app-delish .dl-brand b {
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
+
+.app-surface .dl-nav-link {
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-weight: 500;
+}
+
+/* Faol bo'lim — oltin yorug'lik bilan */
+.app-surface .dl-nav-link.active {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--gold) 22%, transparent),
+    color-mix(in srgb, var(--gold) 8%, transparent)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+/* Havolalar oldidagi belgi — kichik yumaloq maydonda */
+.app-delish .dl-nav-link > span:first-child {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 14px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+}
+
+.app-delish .dl-nav-link.active > span:first-child {
+  background: color-mix(in srgb, var(--gold) 26%, transparent);
+  transform: scale(1.06);
+}
+
+.app-delish .dl-side-foot {
+  border-top-color: color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+/* ---------- Yuqori panel ---------- */
+
+.app-surface .dl-topbar {
+  border-bottom: 1px solid transparent;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+/* Pastida markazdan yo'qoladigan oltin chiziq */
+.app-surface .dl-topbar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--gold) 45%, transparent) 30%,
+    color-mix(in srgb, var(--gold) 45%, transparent) 70%,
+    transparent
+  );
+  opacity: 0.5;
+}
+
+.app-delish .live-dot {
+  padding: 5px 11px 5px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, var(--panel-2) 55%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* ---------- Ro'yxat qatorlari ---------- */
+
+.app-delish .dl-order-row,
+.app-delish .dl-staff-row,
+.app-delish .dl-item-row,
+.app-delish .dl-res-card {
+  transition: background 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-delish .dl-order-row:hover,
+.app-delish .dl-staff-row:hover,
+.app-delish .dl-item-row:hover {
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+  transform: translateX(3px);
+}
+
+/* Xodim tasviri — oltin halqa bilan */
+.app-delish .dl-avatar {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--gold) 26%, transparent),
+    color-mix(in srgb, var(--gold) 8%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--gold) 26%, transparent);
+  color: var(--gold);
+}
+
+/* ---------- Holat belgilari ---------- */
+
+.app-delish .dl-status-pill,
+.app-delish .status-badge {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+}
+
+/* ---------- Stol kartochkalari ---------- */
+
+.app-surface .dl-table-card {
+  border-radius: 16px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.app-surface .dl-table-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--gold) 50%, transparent);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--gold) 16%, transparent);
+}
+
+.app-surface .dl-table-card.occupied {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent);
+}
+
+/* ---------- Diagramma ---------- */
+
+.app-delish .dl-chart-bar {
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 35%, transparent));
+  transition: filter 0.25s ease;
+}
+
+.app-delish .dl-chart-col:hover .dl-chart-bar {
+  filter: brightness(1.2);
+}
+
+/* ---------- Sahifa ochilishi ---------- */
+
+/* Bo'lim almashganda tarkib bittalab suzib chiqadi.
+   `backwards` ATAYLAB yo'q: animatsiya ishlamay qolsa ham tarkib
+   o'z joyida ko'rinib turishi kerak. */
+.dl-content > * > .dl-kpi-grid > .dl-kpi,
+.dl-content > * > .dl-panel,
+.dl-content > * > .dl-grid-2 > * {
+  animation: adminIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes adminIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Sarlavhalar ---------- */
+
+.app-delish .dl-content h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Bo'sh holat ---------- */
+
+.app-delish .dl-list-empty {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+/* ---------- Harakat kamaytirilgan rejim ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .dl-content > * > .dl-kpi-grid > .dl-kpi,
+  .dl-content > * > .dl-panel,
+  .dl-content > * > .dl-grid-2 > * {
+    animation: none;
+  }
+  .app-surface .dl-kpi::before,
+  .app-delish .dl-order-row,
+  .app-delish .dl-staff-row,
+  .app-delish .dl-item-row,
+  .app-surface .dl-table-card {
+    transition: none;
+  }
+}
