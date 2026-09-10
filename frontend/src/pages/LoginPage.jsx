@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { request, ApiError } from '../lib/api';
-import { storeLogin, lastSession, ROLE_LABELS } from '../lib/auth';
+import { storeLogin, lastSession, hasSessionFor, allowedNext, ROLE_LABELS } from '../lib/auth';
 import { ThemeToggle } from '../lib/theme';
 import PhoneInput, { isValidPhone, toFullPhone } from '../components/PhoneInput';
 import SuspendedPage from './SuspendedPage';
@@ -42,7 +42,15 @@ export default function LoginPage() {
   const [shake, setShake] = useState(false);
   const [loading, setLoading] = useState(false);
   const [suspended, setSuspended] = useState(null);
-  const [previous, setPrevious] = useState(() => (invitedPhone ? null : lastSession.get()));
+  // "Davom etish" taklifi ortida HAQIQIY sessiya bo'lishi shart. Avval
+  // tekshirilmasdi va chiqib ketgan odamga ham taklif ko'rinardi: uni
+  // bosgan odam panelga o'tib, darhol shu yerga qaytarilardi — tashqaridan
+  // qaraganda tugamaydigan halqa.
+  const [previous, setPrevious] = useState(() => {
+    if (invitedPhone) return null;
+    const info = lastSession.get();
+    return info && hasSessionFor(info) ? info : null;
+  });
 
   // Kirish muvaffaqiyatli bo'lgach sahifa yumshoq "uchib" ketadi
   const [leaving, setLeaving] = useState(false);
@@ -104,9 +112,16 @@ export default function LoginPage() {
       const body = { phone, password };
       if (place) body.slug = place.slug;
       const data = await request('/login', { method: 'POST', body });
-      const path = storeLogin(data);
+      const home = storeLogin(data);
+
+      // Odam shu yerga sessiyasi tugagani uchun tushgan bo'lishi mumkin.
+      // Unda `?next=` da qayerda turgani saqlangan — o'sha bo'limga
+      // qaytaramiz, panelning boshiga emas.
+      const slug = data.restaurant && data.restaurant.slug;
+      const back = allowedNext(query.get('next'), data.role, slug);
+
       setLeaving(true);
-      setTimeout(() => navigate(path, { replace: true }), 420);
+      setTimeout(() => navigate(back || home, { replace: true }), 420);
     } catch (err) {
       if (
         err instanceof ApiError &&
@@ -258,7 +273,16 @@ export default function LoginPage() {
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
-                    onClick={() => navigate(previous.path, { replace: true })}
+                    onClick={() => {
+                      // Sessiyasi tugagan odam shu yerga `?next=` bilan
+                      // tushgan bo'lishi mumkin — o'sha bo'limga qaytaramiz
+                      const back = allowedNext(
+                        query.get('next'),
+                        previous.role,
+                        String(previous.path).split('/')[1]
+                      );
+                      navigate(back || previous.path, { replace: true });
+                    }}
                   >
                     Davom etish
                   </button>

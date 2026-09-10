@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { createClient } from '../lib/api';
-import { staffAuth } from '../lib/auth';
+import { staffAuth, loginPathFrom, panelPathForRole } from '../lib/auth';
 import { useSocket } from '../lib/socket';
 import { useToast } from '../components/Toast';
 import { playNewOrderSound, unlockAudio } from '../lib/sound';
@@ -32,6 +32,14 @@ function belongsOnBoard(order) {
 export default function KitchenApp() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  // Sessiya tugaganda qayerda turganimizni shu manzil aytadi.
+  // `window.location` EMAS: u yo'naltirishdan keyin darhol o'zgaradi va
+  // effekt ikkinchi marta ishlaganda manzil o'z ichiga o'ralib ketardi.
+  // Ref orqali olinadi, chunki har bo'lim almashganda `api` qayta
+  // yaratilib, sahifalar behuda qayta yuklanmasligi kerak.
+  const routeHere = useLocation();
+  const hereRef = useRef(routeHere);
+  hereRef.current = routeHere;
   const [session] = useState(() => staffAuth.getFor(slug, ['kitchen', 'admin']));
   const [orders, setOrders] = useState([]);
   const [waiters, setWaiters] = useState([]);
@@ -46,10 +54,19 @@ export default function KitchenApp() {
   soundOnRef.current = soundOn;
   const toast = useToast();
 
-  const logout = useCallback(() => {
-    staffAuth.clear(slug, session && session.user.role);
-    navigate('/', { replace: true });
-  }, [slug, session, navigate]);
+  // Chiqishda ham, token eskirganda ham shu ishlaydi. Farqi: `keepPlace`
+  // bo'lsa, turgan manzil `?next=` da saqlanadi va odam qaytadan kirgach
+  // aynan o'sha yerga qaytadi.
+  const leave = useCallback(
+    (keepPlace) => {
+      staffAuth.clear(slug, session && session.user.role);
+      navigate(keepPlace ? loginPathFrom(hereRef.current) : '/', { replace: true });
+    },
+    [slug, session, navigate]
+  );
+
+  const logout = useCallback(() => leave(false), [leave]);
+  const sessionExpired = useCallback(() => leave(true), [leave]);
 
   const api = useMemo(
     () =>
@@ -59,13 +76,21 @@ export default function KitchenApp() {
         // o'z sessiyasi bilan ishlashda davom etadi
         getToken: () => session && session.token,
         getSlug: () => slug,
-        onUnauthorized: logout,
+        onUnauthorized: sessionExpired,
       }),
-    [slug, session, logout]
+    [slug, session, sessionExpired]
   );
 
+  // F5 sessiyani yo'qotmaydi — u localStorage'da. Sessiya haqiqatan yo'q
+  // bo'lsagina chiqamiz, o'shanda ham qayerda turganini olib ketamiz.
   useEffect(() => {
-    if (!session) navigate('/', { replace: true });
+    if (session) return;
+    const other = staffAuth.anyFor(slug);
+    if (other) {
+      navigate(panelPathForRole(slug, other.user.role), { replace: true });
+      return;
+    }
+    navigate(loginPathFrom(hereRef.current), { replace: true });
   }, [session, slug, navigate]);
 
   const reload = useCallback(async () => {

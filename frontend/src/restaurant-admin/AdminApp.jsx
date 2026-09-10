@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { createClient } from '../lib/api';
-import { staffAuth, ROLE_LABELS } from '../lib/auth';
+import { staffAuth, ROLE_LABELS, loginPathFrom, panelPathForRole } from '../lib/auth';
 import { ThemeToggle } from '../lib/theme';
 import { useSocket } from '../lib/socket';
 import DashboardPage from './DashboardPage';
@@ -14,6 +14,14 @@ import OrdersPage from './OrdersPage';
 export default function AdminApp() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  // Sessiya tugaganda qayerda turganimizni shu manzil aytadi.
+  // `window.location` EMAS: u yo'naltirishdan keyin darhol o'zgaradi va
+  // effekt ikkinchi marta ishlaganda manzil o'z ichiga o'ralib ketardi.
+  // Ref orqali olinadi, chunki har bo'lim almashganda `api` qayta
+  // yaratilib, sahifalar behuda qayta yuklanmasligi kerak.
+  const routeHere = useLocation();
+  const hereRef = useRef(routeHere);
+  hereRef.current = routeHere;
   const [session, setSession] = useState(() => staffAuth.getFor(slug, ['admin']));
   const [restaurant, setRestaurant] = useState(null);
   const [pendingReservations, setPendingReservations] = useState(0);
@@ -27,11 +35,20 @@ export default function AdminApp() {
   // ya'ni birinchi o'tishdan keyin hech qaysi bo'lim ochilmay qolardi.
   const base = `/${slug}/admin`;
 
-  const logout = useCallback(() => {
-    staffAuth.clear(slug, 'admin');
-    setSession(null);
-    navigate('/', { replace: true });
-  }, [slug, navigate]);
+  // Chiqishda ham, token eskirganda ham shu ishlaydi. Farqi: `keepPlace`
+  // bo'lsa, odam turgan manzil `?next=` da saqlanadi va u qaytadan
+  // kirgach aynan o'sha bo'limga qaytadi.
+  const leave = useCallback(
+    (keepPlace) => {
+      staffAuth.clear(slug, 'admin');
+      setSession(null);
+      navigate(keepPlace ? loginPathFrom(hereRef.current) : '/', { replace: true });
+    },
+    [slug, navigate]
+  );
+
+  const logout = useCallback(() => leave(false), [leave]);
+  const sessionExpired = useCallback(() => leave(true), [leave]);
 
   const api = useMemo(
     () =>
@@ -41,14 +58,27 @@ export default function AdminApp() {
         // o'z sessiyasi bilan ishlashda davom etadi
         getToken: () => session && session.token,
         getSlug: () => slug,
-        onUnauthorized: logout,
+        onUnauthorized: sessionExpired,
       }),
-    [slug, session, logout]
+    [slug, session, sessionExpired]
   );
 
+  // SAHIFA YANGILANGANDA (F5) NIMA BO'LADI.
+  //
+  // Sessiya localStorage'da turadi, shuning uchun yangilanish uni
+  // yo'qotmaydi — odam o'zi turgan bo'limda qoladi, sahifa esa yangilanadi.
+  // Sessiya haqiqatan yo'q bo'lsagina login sahifasiga chiqamiz, va o'shanda
+  // ham qayerda turganini `?next=` da olib ketamiz.
   useEffect(() => {
     if (!session) {
-      navigate('/', { replace: true });
+      // Shu muassasada boshqa rol bilan kirilgan bo'lsa — login emas,
+      // o'sha odamning O'Z paneliga yuboramiz
+      const other = staffAuth.anyFor(slug);
+      if (other) {
+        navigate(panelPathForRole(slug, other.user.role), { replace: true });
+        return;
+      }
+      navigate(loginPathFrom(hereRef.current), { replace: true });
       return;
     }
     if (session.user.role !== 'admin') {

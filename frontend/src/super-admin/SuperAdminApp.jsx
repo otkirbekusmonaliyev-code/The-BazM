@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, Route, Routes, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { createClient } from '../lib/api';
-import { superAuth, lastSession } from '../lib/auth';
+import { superAuth, lastSession, loginPathFrom } from '../lib/auth';
 import { ThemeToggle } from '../lib/theme';
 import DashboardPage from './DashboardPage';
 import PlacesPage from './PlacesPage';
@@ -20,24 +20,40 @@ export default function SuperAdminApp() {
   const [places, setPlaces] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const navigate = useNavigate();
+  // Sessiya tugaganda qayerda turganimizni shu manzil aytadi.
+  // `window.location` EMAS: u yo'naltirishdan keyin darhol o'zgaradi va
+  // effekt ikkinchi marta ishlaganda manzil o'z ichiga o'ralib ketardi.
+  // Ref orqali olinadi, chunki har bo'lim almashganda `api` qayta
+  // yaratilib, sahifalar behuda qayta yuklanmasligi kerak.
+  const routeHere = useLocation();
+  const hereRef = useRef(routeHere);
+  hereRef.current = routeHere;
 
-  const logout = useCallback(() => {
-    superAuth.clear();
-    lastSession.clear();
-    navigate('/', { replace: true });
-  }, [navigate]);
+  const leave = useCallback(
+    (keepPlace) => {
+      superAuth.clear();
+      lastSession.clear();
+      navigate(keepPlace ? loginPathFrom(hereRef.current) : '/', { replace: true });
+    },
+    [navigate]
+  );
+
+  const logout = useCallback(() => leave(false), [leave]);
+  const sessionExpired = useCallback(() => leave(true), [leave]);
 
   const api = useMemo(
     () =>
       createClient({
         getToken: () => session && session.token,
-        onUnauthorized: logout,
+        onUnauthorized: sessionExpired,
       }),
-    [session, logout]
+    [session, sessionExpired]
   );
 
+  // F5 sessiyani yo'qotmaydi — u localStorage'da. Sessiya yo'q bo'lsagina
+  // chiqamiz, o'shanda ham qaysi bo'limda turganini olib ketamiz.
   useEffect(() => {
-    if (!session) navigate('/', { replace: true });
+    if (!session) navigate(loginPathFrom(hereRef.current), { replace: true });
   }, [session, navigate]);
 
   // ⌘K / Ctrl+K — tezkor qidiruv
