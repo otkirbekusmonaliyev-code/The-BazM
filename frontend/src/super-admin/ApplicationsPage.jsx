@@ -158,7 +158,21 @@ export default function ApplicationsPage({ api, onChanged }) {
               <button type="button" className="icon-btn" onClick={() => setResult(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <div className="form-note">Kirish ma'lumotlarini muassasa egasiga uzating.</div>
+              {/* Xat ketdimi — shu yerda AYNIQSA muhim: ketmagan bo'lsa,
+                  ma'lumotni qo'lda uzatish kerakligini bilish shart */}
+              {result.email && result.email.sent ? (
+                <div className="form-note" style={{ color: 'var(--ok, #4caf50)' }}>
+                  ✉️ Kirish ma'lumotlari <b>{result.email.to}</b> pochtasiga yuborildi.
+                  Quyidagilar zaxira uchun.
+                </div>
+              ) : (
+                <div className="form-note">
+                  {result.email && result.email.to
+                    ? <>⚠️ Xat <b>{result.email.to}</b> ga yuborilmadi. Ma'lumotlarni qo'lda uzating.</>
+                    : 'Arizada pochta ko\'rsatilmagan — ma\'lumotlarni qo\'lda uzating.'}
+                </div>
+              )}
+
               <div className="credentials-box">
                 <div>Nomi: {result.restaurant.name}</div>
                 <div>Manzil: {window.location.origin}</div>

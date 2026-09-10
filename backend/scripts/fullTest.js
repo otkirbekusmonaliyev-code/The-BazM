@@ -346,8 +346,90 @@ async function main() {
   if (badApp.status === 400) ok('ro\'yxatdan tashqari shahar rad etildi');
   else bad('ro\'yxatdan tashqari shahar rad etildi', `HTTP ${badApp.status}`);
 
+  // ---------- 9) Tarif chegaralari ----------
+  //
+  // Sayt "Basic — 10 tagacha stol" deb va'da beradi. Avval bu shunchaki
+  // matn edi: kodda chegara yo'q edi va Basic tarifdagi muassasa 500 ta
+  // stol yaratsa ham hech kim to'xtatmasdi.
+  //
+  // Ikki narsa tekshiriladi: chegara HAQIQATAN ishlaydimi, va u mavjud
+  // ma'lumotni buzmaydimi (tarifi pasaygan muassasaning zali qulab
+  // tushmasligi kerak).
+  section('9) TARIF CHEGARALARI');
+  {
+    const basic = places.find((p) => p.plan === 'basic');
+    const pro = places.find((p) => p.plan === 'pro');
+
+    if (basic) {
+      const b = await api('/login', {
+        method: 'POST',
+        body: { phone: basic.adminPhone, password: basic.adminPassword, slug: basic.slug },
+      });
+      const token = b.data.token;
+
+      // Har bir muassasada allaqachon 5 ta stol bor, Basic chegarasi 10 ta
+      const upToLimit = await api('/tables/admin/bulk', {
+        method: 'POST', token, slug: basic.slug, body: { from: 6, to: 10 },
+      });
+      if (upToLimit.status === 201) ok('Basic: chegaragacha stol qo\'shildi', '10 ta bo\'ldi');
+      else bad('Basic: chegaragacha stol qo\'shildi', `HTTP ${upToLimit.status}`);
+
+      const over = await api('/tables/admin', {
+        method: 'POST', token, slug: basic.slug, body: { tableNumber: 11 },
+      });
+      if (over.status === 403) ok('Basic: 11-stol rad etildi', over.data && over.data.error);
+      else bad('Basic: 11-stol rad etildi', `HTTP ${over.status}`);
+
+      if (over.data && /Basic/.test(over.data.error || '') && /tarifni/i.test(over.data.error || '')) {
+        ok('xato matni tushunarli (tarif nomi + nima qilish kerak)');
+      } else {
+        bad('xato matni tushunarli', over.data && over.data.error);
+      }
+
+      const overBulk = await api('/tables/admin/bulk', {
+        method: 'POST', token, slug: basic.slug, body: { from: 11, to: 30 },
+      });
+      if (overBulk.status === 403) ok('Basic: ommaviy qo\'shish ham rad etildi');
+      else bad('Basic: ommaviy qo\'shish ham rad etildi', `HTTP ${overBulk.status}`);
+
+      // Mavjudlariga TEGILMAYDI — chegara faqat yangisiga
+      const still = await api('/tables/admin', { token, slug: basic.slug });
+      if (still.status === 200 && still.data.length === 10) {
+        ok('mavjud stollar joyida qoldi', `${still.data.length} ta`);
+      } else {
+        bad('mavjud stollar joyida qoldi', `${still.data && still.data.length} ta`);
+      }
+    }
+
+    if (pro) {
+      const p = await api('/login', {
+        method: 'POST',
+        body: { phone: pro.adminPhone, password: pro.adminPassword, slug: pro.slug },
+      });
+      const token = p.data.token;
+      const many = await api('/tables/admin/bulk', {
+        method: 'POST', token, slug: pro.slug, body: { from: 6, to: 60 },
+      });
+      if (many.status === 201) ok('Pro: chegara yo\'q', `${many.data.created} ta stol qo'shildi`);
+      else bad('Pro: chegara yo\'q', `HTTP ${many.status}`);
+    }
+
+    // Saytdagi tariflar bir xil raqamlarni ko'rsatadimi?
+    const plans = await api('/public/plans');
+    const basicPlan = (plans.data || []).find((x) => x.key === 'basic');
+    if (basicPlan && basicPlan.limits && basicPlan.limits.maxTables === 10) {
+      ok('saytdagi tarif backend chegarasi bilan bir xil', '10 ta stol');
+    } else {
+      bad('saytdagi tarif backend chegarasi bilan bir xil', JSON.stringify(basicPlan && basicPlan.limits));
+    }
+    if (basicPlan && basicPlan.features.some((f) => f.includes('10 tagacha stol'))) {
+      ok('tarif tavsifida chegara yozilgan');
+    } else {
+      bad('tarif tavsifida chegara yozilgan');
+    }
+  }
   // ---------- 8) Tozalash ----------
-  section('8) TOZALASH');
+  section('10) TOZALASH');
 
   if (KEEP) {
     console.log('  (--keep berilgan — muassasalar qoldirildi)');

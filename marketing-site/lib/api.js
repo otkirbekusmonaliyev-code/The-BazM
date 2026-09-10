@@ -19,23 +19,38 @@ async function safeFetch(path, fallback, revalidate = 300) {
   }
 }
 
+// ZAXIRA TARIFLAR — faqat backend javob bermaganda ishlatiladi.
+//
+// Haqiqiy ro'yxat backend'da (`/api/public/plans`), stol va xodim
+// chegaralari esa `services/planLimits.js` da. Bu yerdagi nusxa o'sha
+// bilan bir xil bo'lishi kerak; farq qilsa, sayt backend o'chgan paytda
+// boshqa narsa va'da qilib qo'yadi.
 const FALLBACK_PLANS = [
   {
     key: 'basic',
     name: 'Basic',
     price: 299000,
-    features: ['1 ta oshxona ekrani', '10 tagacha stol', 'QR menyu va buyurtma', 'Telegram bot'],
+    limits: { maxTables: 10, maxStaff: 10 },
+    features: [
+      '10 tagacha stol · 10 tagacha xodim',
+      'QR menyu — kamera bilan ochiladi, ilova shart emas',
+      'Telegram bot va Mini App',
+      'Oshxona ekrani — buyurtmalar jonli tushadi',
+      'Har bir stol uchun QR kod (PNG va SVG)',
+    ],
   },
   {
     key: 'standard',
     name: 'Standard',
     price: 599000,
     popular: true,
+    limits: { maxTables: 40, maxStaff: 30 },
     features: [
-      'Cheksiz oshxona ekrani',
-      '40 tagacha stol',
+      '40 tagacha stol · 30 tagacha xodim',
+      'Basic’dagi hammasi',
       'Ofitsiantlar boshqaruvi',
-      'Stol bron qilish',
+      'Botdan ofitsiant chaqirish',
+      'Oldindan stol bron qilish',
       'Kunlik savdo hisoboti',
     ],
   },
@@ -43,8 +58,10 @@ const FALLBACK_PLANS = [
     key: 'pro',
     name: 'Pro',
     price: 1199000,
+    limits: { maxTables: null, maxStaff: null },
     features: [
       'Cheksiz stol va xodim',
+      'Standard’dagi hammasi',
       'Bir nechta filial',
       'O\'z brendingiz va rangingiz',
       'Kengaytirilgan hisobotlar',

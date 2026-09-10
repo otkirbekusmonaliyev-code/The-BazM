@@ -1,8 +1,25 @@
 // BITTA MUASSASAGA XIZMAT QILUVCHI TELEGRAM BOT.
 //
-// Bot bazaga to'g'ridan-to'g'ri emas, o'z backend'imizning HTTP API'si orqali
-// murojaat qiladi — shu bilan barcha tekshiruvlar (stol bandmi, bron vaqti
-// to'g'rimi) bitta joyda, controller'larda qoladi.
+// BOT NIMA QILADI — VA NIMA QILMAYDI.
+//
+// Bot ataylab uchta ish bilan cheklangan:
+//   🍽  Mini App'ni ochib beradi
+//   🔔  aniq bir ofitsiantni chaqiradi
+//   📅  kelajakdagi kunga stol bron qiladi
+//
+// Menyu varaqlash, stol band qilish, "buyurtmam qayerda?" — bularning
+// hammasi ilovada bor va u yerda ancha yaxshi ishlaydi. Botdagi takrori
+// ikki zarar keltirardi: mijoz qaysi biridan foydalanishni bilmay qolardi,
+// va bir xil mantiq ikki joyda yozilgani uchun ular sekin-asta bir-biridan
+// uzoqlashardi. Shuning uchun bot faqat ILOVA QILA OLMAYDIGAN ishlarni
+// qiladi — ofitsiantga xabar yuborish va oldindan bron.
+//
+// Bot bazaga asosan o'z backend'imizning HTTP API'si orqali murojaat qiladi —
+// shu bilan tekshiruvlar (bron vaqti to'g'rimi) controller'larda qoladi.
+// Ikki istisno bor va ikkalasi ham ATAYLAB: ro'yxatga olish va ofitsiant
+// chaqirish to'g'ridan-to'g'ri servis moduliga boradi, chunki ular uchun
+// ochiq endpoint yaratish begonaga eshik ochib qo'yardi (istalgan odam
+// istalgan ofitsiantni istalgan stolga chaqirib turaverardi).
 //
 // Ikkita kirish yo'li:
 //   1) QR kod deep-link'i:  t.me/<bot>?start=t_<qrToken>
@@ -30,7 +47,9 @@
 const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { tableWebUrl, tablePickerUrl, demoUrl } = require('../utils/links');
+const { getTenantClient } = require('../config/tenantDb');
 const botCustomers = require('../services/botCustomers');
+const waiterCalls = require('../services/waiterCalls');
 const session = require('./session');
 const { t, pickLang } = require('./texts');
 
@@ -86,7 +105,6 @@ async function api(slug, path, options = {}) {
 //  KICHIK YORDAMCHILAR
 // ============================================================
 
-const money = (value) => `${new Intl.NumberFormat('ru-RU').format(Number(value) || 0)} so'm`;
 
 // TELEGRAM TUGMALARIDAGI URL CHEKLOVLARI.
 //
@@ -163,26 +181,25 @@ function errorText(c, err) {
   return c.errors.generic;
 }
 
-function mainMenu(c, s) {
-  const rows = [
-    // Eng birinchi va eng muhim: QR kodsiz ham ilovani ochish mumkin
+// BOT ATAYLAB KICHIK.
+//
+// Avval bu yerda oltita tugma bor edi: menyuni varaqlash, stol tanlash,
+// "buyurtmam qayerda?" va h.k. Ularning hammasi ilovada ALLAQACHON bor va
+// u yerda ancha yaxshi ishlaydi — botdagi takrori faqat ikkita zarar
+// keltirardi: mijoz qaysi biridan foydalanishni bilmay qolardi, va bir xil
+// mantiq ikki joyda yozilgani uchun ular sekin-asta bir-biridan uzoqlashardi.
+//
+// Endi bot faqat ILOVA QILA OLMAYDIGAN ishlarni qiladi:
+//   🍽  ilovani ochib berish
+//   🔔  aniq bir ofitsiantni chaqirish
+//   📅  kelajakdagi kunga stol bron qilish
+function mainMenu(c) {
+  return Markup.inlineKeyboard([
     [Markup.button.callback(c.menu.openApp, 'open_app')],
-    [Markup.button.callback(c.menu.pickTable, 'pick_table')],
+    [Markup.button.callback(c.menu.callWaiter, 'call_waiter')],
     [Markup.button.callback(c.menu.reserve, 'reserve')],
-    [Markup.button.callback(c.menu.browse, 'menu')],
-  ];
-  // Bu ikkisi faqat stolda o'tirgan mijozga ma'noli
-  if (s.table) {
-    rows.push([
-      Markup.button.callback(c.menu.myOrder, 'my_order'),
-      Markup.button.callback(c.menu.callWaiter, 'call_waiter'),
-    ]);
-  }
-  rows.push([
-    Markup.button.callback(c.menu.help, 'help'),
-    Markup.button.callback(c.menu.lang, 'lang'),
+    [Markup.button.callback(c.menu.lang, 'lang')],
   ]);
-  return Markup.inlineKeyboard(rows);
 }
 
 const backRow = (c) => [Markup.button.callback(c.menu.back, 'home')];
@@ -213,7 +230,7 @@ function createRestaurantBot({ token, slug, name }) {
     // "avval raqam bering" deyish — bu ochiq masxara. Bir marta so'raymiz.
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
     const head = prefix ? `${prefix}\n\n` : '';
-    return show(ctx, `${head}${c.whatNext}`, mainMenu(c, s));
+    return show(ctx, `${head}${c.whatNext}`, mainMenu(c));
   }
 
   // ============================================================
@@ -290,12 +307,12 @@ function createRestaurantBot({ token, slug, name }) {
         // odamni oddiy menyuga olib chiqamiz, boshi berk ko'chada emas
         return ctx.reply(
           `${head}${err.offline ? c.errors.offline : c.qr.invalid}`,
-          mainMenu(c, s)
+          mainMenu(c)
         );
       }
     }
 
-    return ctx.reply(`${head}${c.whatNext}`, mainMenu(c, s));
+    return ctx.reply(`${head}${c.whatNext}`, mainMenu(c));
   }
 
   // Namuna menyu — ro'yxatdan o'tmasdan ham ochiladi
@@ -371,7 +388,7 @@ function createRestaurantBot({ token, slug, name }) {
     const { s, c } = ctxOf(ctx);
     // Ro'yxatdan o'tmaganga ishlaydigan tugmalar emas, keyingi qadam kerak
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c, c.help);
-    return ctx.reply(c.help, mainMenu(c, s));
+    return ctx.reply(c.help, mainMenu(c));
   });
 
   // Har qanday oqimni to'xtatish. Ikkala tilda ham ishlaydi.
@@ -382,7 +399,7 @@ function createRestaurantBot({ token, slug, name }) {
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
     return ctx.reply(
       had ? `${c.reserve.cancelled}\n\n${c.whatNext}` : c.whatNext,
-      mainMenu(c, s)
+      mainMenu(c)
     );
   };
   bot.command('bekor', cancelFlow);
@@ -392,12 +409,6 @@ function createRestaurantBot({ token, slug, name }) {
   bot.action('home', async (ctx) => {
     await ctx.answerCbQuery();
     return goHome(ctx);
-  });
-
-  bot.action('help', async (ctx) => {
-    await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
-    return show(ctx, c.help, mainMenu(c, s));
   });
 
   // ---------- Til ----------
@@ -433,131 +444,7 @@ function createRestaurantBot({ token, slug, name }) {
     botCustomers.setLang(slug, ctx.from.id, s.lang).catch(() => {});
     if (s.customer && s.customer.lang) s.customer.lang = s.lang;
 
-    return show(ctx, `${c.langSet}\n\n${c.whatNext}`, mainMenu(c, s));
-  });
-
-  // ---------- Menyuni ko'rish ----------
-  bot.action('menu', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
-    if (!(await requireRegistration(ctx, c))) return null;
-    await ctx.answerCbQuery();
-    try {
-      const categories = await api(slug, '/menu');
-      if (!categories || categories.length === 0) {
-        return show(ctx, c.menuView.empty, Markup.inlineKeyboard([backRow(c)]));
-      }
-      s.categories = categories;
-
-      const rows = categories.map((cat, i) => [
-        Markup.button.callback(cat.name, `cat_${i}`),
-      ]);
-      rows.push(backRow(c));
-      return show(ctx, `🍽  ${c.menuView.pickCategory}`, Markup.inlineKeyboard(rows));
-    } catch (err) {
-      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
-    }
-  });
-
-  bot.action(/^cat_(\d+)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
-    const category = s.categories && s.categories[Number(ctx.match[1])];
-    if (!category) return goHome(ctx);
-
-    const lines = category.items.map((item) => {
-      const price = money(item.price);
-      const tail = item.isAvailable === false ? ` — ${c.menuView.soldOut}` : '';
-      const desc = item.description ? `\n     ${item.description}` : '';
-      return `• ${item.name} — ${price}${tail}${desc}`;
-    });
-
-    const body = `📖  ${category.name}\n\n${lines.join('\n')}\n\n${c.menuView.orderHint}`;
-    return show(
-      ctx,
-      body.length > 3900 ? `${body.slice(0, 3900)}…` : body,
-      Markup.inlineKeyboard([
-        [Markup.button.callback(c.menu.browse, 'menu')],
-        backRow(c),
-      ])
-    );
-  });
-
-  // ---------- Bo'sh stolni tanlash ----------
-  bot.action('pick_table', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
-    if (!(await requireRegistration(ctx, c))) return null;
-    await ctx.answerCbQuery();
-    try {
-      const tables = await api(slug, '/client/tables/available');
-      if (!tables.length) {
-        return show(ctx, c.tables.none, Markup.inlineKeyboard([
-          [Markup.button.callback(c.menu.reserve, 'reserve')],
-          backRow(c),
-        ]));
-      }
-
-      const rows = [];
-      for (let i = 0; i < tables.length; i += 4) {
-        rows.push(
-          tables
-            .slice(i, i + 4)
-            .map((tb) => Markup.button.callback(c.tables.label(tb.tableNumber), `claim_${tb.id}`))
-        );
-      }
-      rows.push(backRow(c));
-      return show(ctx, c.tables.pick(tables.length), Markup.inlineKeyboard(rows));
-    } catch (err) {
-      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
-    }
-  });
-
-  bot.action(/^claim_(.+)$/, async (ctx) => {
-    await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
-    const tableId = ctx.match[1];
-    const clientName = ctx.from.first_name || 'Mehmon';
-
-    try {
-      const result = await api(slug, `/client/tables/${tableId}/claim`, {
-        method: 'POST',
-        body: JSON.stringify({ clientName }),
-      });
-
-      // Sessiya tokenini saqlaymiz — "buyurtmam qayerda?" va "ofitsiantni
-      // chaqirish" aynan shu token bilan ishlaydi
-      s.table = {
-        id: result.table.id,
-        number: result.table.tableNumber,
-        token: result.token,
-        name: clientName,
-      };
-
-      // Mijoz Mini App'da yana ism kiritmasligi uchun tokenni havolaga qo'shamiz
-      const url =
-        `${tablePickerUrl(slug)}?table=${result.table.id}&n=${result.table.tableNumber}` +
-        `&name=${encodeURIComponent(clientName)}&token=${result.token}`;
-
-      const link = withLink(c, c.tables.claimed(result.table.tableNumber), url);
-
-      // Stol ALLAQACHON band qilindi. Endi xabar yuborishdagi har qanday
-      // muammo mijozni "stol bandmi yo'qmi" degan noaniqlikda qoldirmasligi
-      // kerak — shuning uchun yuborish alohida himoyalangan.
-      try {
-        return await show(ctx, link.text, Markup.inlineKeyboard([...link.rows, backRow(c)]));
-      } catch (sendErr) {
-        console.error(`   [bot:${slug}] tasdiq yuborilmadi:`, sendErr.message);
-        await ctx.answerCbQuery(c.tables.claimed(result.table.tableNumber), { show_alert: true });
-        return null;
-      }
-    } catch (err) {
-      if (err.status === 409) {
-        return show(ctx, c.tables.taken, Markup.inlineKeyboard([
-          [Markup.button.callback(c.menu.pickTable, 'pick_table')],
-          backRow(c),
-        ]));
-      }
-      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
-    }
+    return show(ctx, `${c.langSet}\n\n${c.whatNext}`, mainMenu(c));
   });
 
   // ---------- Skanersiz Mini App'ni ochish ----------
@@ -582,75 +469,151 @@ function createRestaurantBot({ token, slug, name }) {
     return show(ctx, link.text, Markup.inlineKeyboard([...link.rows, backRow(c)]));
   });
 
-  // ---------- Buyurtma holati ----------
-  bot.action('my_order', async (ctx) => {
-    await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
-    if (!s.table || !s.table.token) {
-      return show(ctx, c.order.needTable, Markup.inlineKeyboard([
-        [Markup.button.callback(c.menu.pickTable, 'pick_table')],
-        backRow(c),
-      ]));
+  // ============================================================
+  //  OFITSIANT CHAQIRISH — MANZILLI
+  // ============================================================
+  //
+  // Avval chaqiruv hamma ofitsiantga birdan ketardi va u ishlashi uchun
+  // mijozda ochiq "stol sessiyasi" bo'lishi shart edi — ya'ni odam avval
+  // stol band qilib, buyurtma oqimidan o'tishi kerak edi. Faqat suv
+  // so'ramoqchi bo'lgan odam uchun bu juda uzun yo'l.
+  //
+  // Endi ikki qadam: qaysi stol -> qaysi ofitsiant. Xabar AYNAN o'sha
+  // ofitsiantga boradi, "hamma ko'radi, hech kim bormaydi" holati yo'q.
+
+  const tableRows = (c, tables) => {
+    const rows = [];
+    for (let i = 0; i < tables.length; i += 4) {
+      rows.push(
+        tables
+          .slice(i, i + 4)
+          .map((t) => Markup.button.callback(c.call.tableLabel(t.tableNumber), `cw_t_${t.id}`))
+      );
+    }
+    return rows;
+  };
+
+  // 2-qadam. Stol ma'lum — endi kimni chaqirishni so'raymiz.
+  async function askWaiter(ctx, c, s) {
+    const db = await getTenantClient(slug);
+    const { waiters, allBusy } = await waiterCalls.listCallableWaiters(db);
+
+    if (waiters.length === 0) {
+      return show(ctx, c.call.none, Markup.inlineKeyboard([backRow(c)]));
     }
 
+    const rows = waiters.map((w) => [
+      Markup.button.callback(
+        w.status === 'busy' ? `${w.fullName} · ⏳` : w.fullName,
+        `cw_w_${w.id}`
+      ),
+    ]);
+    // "Farqi yo'q" — eng tez yo'l, shuning uchun eng tepada
+    rows.unshift([Markup.button.callback(c.call.anyone, 'cw_any')]);
+    rows.push([Markup.button.callback(c.call.changeTable, 'cw_change')]);
+    rows.push(backRow(c));
+
+    const head = allBusy ? c.call.pickAllBusy : c.call.pick(waiters.length);
+    return show(ctx, `${c.call.tableLabel(s.table.number)}\n\n${head}`, Markup.inlineKeyboard(rows));
+  }
+
+  // 1-qadam. Stolni bilmasak — so'raymiz. Bilsak — darhol ikkinchi qadamga.
+  async function askTable(ctx, c) {
+    const db = await getTenantClient(slug);
+    const tables = await waiterCalls.listTables(db);
+    if (tables.length === 0) {
+      return show(ctx, c.call.noTables, Markup.inlineKeyboard([backRow(c)]));
+    }
+    return show(
+      ctx,
+      c.call.askTable,
+      Markup.inlineKeyboard([...tableRows(c, tables), backRow(c)])
+    );
+  }
+
+  bot.action('call_waiter', async (ctx) => {
+    const { s, c } = ctxOf(ctx);
+    if (!(await requireRegistration(ctx, c))) return null;
+    await ctx.answerCbQuery();
     try {
-      const orders = await api(slug, '/client/orders', {
-        headers: { Authorization: `Bearer ${s.table.token}` },
-      });
-      if (!orders || orders.length === 0) {
-        return show(ctx, c.order.none, Markup.inlineKeyboard([backRow(c)]));
-      }
+      // QR kod bilan kelgan bo'lsa stol allaqachon ma'lum — so'ramaymiz
+      if (s.table && s.table.id && s.table.number) return await askWaiter(ctx, c, s);
+      return await askTable(ctx, c);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
+    }
+  });
 
-      const lines = orders.slice(0, 5).map((o) => {
-        const status = c.order.statuses[o.status] || o.status;
-        return `#${String(o.id).slice(0, 6)} · ${money(o.totalPrice)}\n${status}`;
-      });
+  bot.action('cw_change', async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    s.table = null;
+    try {
+      return await askTable(ctx, c);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
+    }
+  });
 
+  bot.action(/^cw_t_(.+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    try {
+      const db = await getTenantClient(slug);
+      const tables = await waiterCalls.listTables(db);
+      const table = tables.find((t) => t.id === ctx.match[1]);
+      if (!table) return await askTable(ctx, c);
+
+      // Stolni eslab qolamiz: keyingi chaqiruvda qayta so'ramaymiz
+      s.table = { id: table.id, number: table.tableNumber, token: s.table ? s.table.token : null };
+      return await askWaiter(ctx, c, s);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
+    }
+  });
+
+  // Aniq ofitsiant yoki "farqi yo'q" — ikkalasi ham shu yerga tushadi
+  async function sendCall(ctx, waiterId) {
+    const { s, c } = ctxOf(ctx);
+    if (!s.table || !s.table.id) return askTable(ctx, c);
+
+    try {
+      const db = await getTenantClient(slug);
+      const { waiter, tableNumber } = await waiterCalls.call(slug, db, {
+        tableId: s.table.id,
+        waiterId,
+        clientName: (s.customer && s.customer.firstName) || ctx.from.first_name || 'Mehmon',
+      });
       return show(
         ctx,
-        `${c.order.title}\n\n${lines.join('\n\n')}`,
+        c.call.sent(waiter.fullName, tableNumber),
         Markup.inlineKeyboard([
-          [Markup.button.callback(c.menu.myOrder, 'my_order')],
+          [Markup.button.callback(c.menu.callWaiter, 'call_waiter')],
           backRow(c),
         ])
       );
     } catch (err) {
-      // Sessiya muddati tugagan bo'lishi mumkin (3 soat)
-      if (err.status === 401) {
-        s.table = null;
-        return show(ctx, c.order.needTable, Markup.inlineKeyboard([
-          [Markup.button.callback(c.menu.pickTable, 'pick_table')],
-          backRow(c),
-        ]));
+      if (err.code === 'NO_WAITERS') {
+        return show(ctx, c.call.none, Markup.inlineKeyboard([backRow(c)]));
       }
+      if (err.code === 'TABLE_NOT_FOUND') {
+        s.table = null;
+        return askTable(ctx, c);
+      }
+      console.error(`   [bot:${slug}] chaqiruv yuborilmadi:`, err.message);
       return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
     }
+  }
+
+  bot.action('cw_any', async (ctx) => {
+    await ctx.answerCbQuery();
+    return sendCall(ctx, null);
   });
 
-  bot.action('call_waiter', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
-    if (!s.table || !s.table.token) {
-      await ctx.answerCbQuery();
-      return show(ctx, c.order.needTable, Markup.inlineKeyboard([
-        [Markup.button.callback(c.menu.pickTable, 'pick_table')],
-        backRow(c),
-      ]));
-    }
-    try {
-      await api(slug, '/client/call-waiter', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${s.table.token}` },
-        body: JSON.stringify({}),
-      });
-      await ctx.answerCbQuery(c.order.waiterCalled, { show_alert: true });
-      return null;
-    } catch (err) {
-      await ctx.answerCbQuery();
-      if (err.status === 401) s.table = null;
-      return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
-    }
+  bot.action(/^cw_w_(.+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    return sendCall(ctx, ctx.match[1]);
   });
-
   // ============================================================
   //  BRON QILISH — bosqichma-bosqich, asosan tugmalar bilan
   // ============================================================
@@ -860,11 +823,11 @@ function createRestaurantBot({ token, slug, name }) {
           `${c.fields.party}  ${d.partySize} ${c.fields.people}\n` +
           `${c.fields.when}  ${fmtDate(when)}  ${fmtTime(when)}\n\n` +
           c.reserve.afterSent,
-        mainMenu(c, s)
+        mainMenu(c)
       );
     } catch (err) {
       s.draft = null;
-      return show(ctx, `${c.reserve.failed}: ${errorText(c, err)}`, mainMenu(c, s));
+      return show(ctx, `${c.reserve.failed}: ${errorText(c, err)}`, mainMenu(c));
     }
   });
 
@@ -938,7 +901,7 @@ function createRestaurantBot({ token, slug, name }) {
 
     // Hech qanday oqim yo'q — buyruq bo'lmagan har qanday matnga menyu
     if (!draft) {
-      return ctx.reply(c.whatNext, mainMenu(c, s));
+      return ctx.reply(c.whatNext, mainMenu(c));
     }
 
     if (draft.step === 'name') {
@@ -997,14 +960,14 @@ function createRestaurantBot({ token, slug, name }) {
       return showConfirm(ctx, c, s);
     }
 
-    return ctx.reply(c.whatNext, mainMenu(c, s));
+    return ctx.reply(c.whatNext, mainMenu(c));
   });
 
   // Boshqa turdagi xabarlar (rasm, stiker, ovoz) — jimgina menyuga qaytaramiz
   bot.on('message', async (ctx) => {
     const { s, c } = ctxOf(ctx);
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
-    return ctx.reply(c.whatNext, mainMenu(c, s));
+    return ctx.reply(c.whatNext, mainMenu(c));
   });
 
   // Ushlanmagan har qanday xato: jurnalga yozamiz va mijozga bir og'iz aytamiz.
@@ -1015,7 +978,7 @@ function createRestaurantBot({ token, slug, name }) {
       const s = session.get(ctx);
       const c = t(s.lang || 'uz');
       if (ctx.updateType === 'callback_query') await ctx.answerCbQuery();
-      await ctx.reply(c.errors.generic, mainMenu(c, s));
+      await ctx.reply(c.errors.generic, mainMenu(c));
     } catch (_) {
       /* mijoz botni bloklagan bo'lishi mumkin — bu yerda qiladigan ish yo'q */
     }

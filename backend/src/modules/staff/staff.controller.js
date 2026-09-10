@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { z } = require('zod');
 const { inviteUrl } = require('../../utils/links');
 const staffDirectory = require('../../services/staffDirectory');
+const planLimits = require('../../services/planLimits');
 
 const inviteSchema = z.object({
   fullName: z.string().min(2),
@@ -20,6 +21,10 @@ async function inviteStaff(req, res, next) {
     if (existing) {
       return res.status(409).json({ error: 'Bu telefon raqami bilan xodim allaqachon mavjud' });
     }
+
+    // Tarif chegarasi. Mavjud xodimlarga tegilmaydi — faqat yangisini
+    // qo'shish to'xtatiladi
+    await planLimits.assertCanAddStaff(req.restaurantSlug, tenantDb, 1);
 
     // Yagona login uchun telefon butun platformada unikal bo'lishi shart —
     // aks holda tizim qaysi restoranga kiritishni bilmaydi

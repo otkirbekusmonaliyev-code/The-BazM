@@ -4,6 +4,7 @@ const { z } = require('zod');
 const { tableUrl, appUrlInfo } = require('../../utils/links');
 const realtime = require('../../realtime/io');
 const { CLOSED_STATUSES } = require('../../utils/orderStatus');
+const planLimits = require('../../services/planLimits');
 
 const createTableSchema = z.object({
   tableNumber: z.number().int().positive(),
@@ -13,6 +14,7 @@ const createTableSchema = z.object({
 async function createTable(req, res, next) {
   try {
     const { tableNumber } = createTableSchema.parse(req.body);
+    await planLimits.assertCanAddTables(req.restaurantSlug, req.tenantDb, 1);
     const qrToken = crypto.randomBytes(16).toString('hex');
 
     const table = await req.tenantDb.restaurantTable.create({
@@ -56,7 +58,10 @@ async function createTablesBulk(req, res, next) {
         rows.push({ tableNumber: n, qrToken: crypto.randomBytes(16).toString('hex') });
       }
     }
+    // Tarif chegarasi HAQIQATAN qo'shiladiganlar bo'yicha tekshiriladi:
+    // mavjud raqamlar qayta yaratilmaydi, ular hisobga kirmasligi kerak
     if (rows.length > 0) {
+      await planLimits.assertCanAddTables(req.restaurantSlug, req.tenantDb, rows.length);
       await req.tenantDb.restaurantTable.createMany({ data: rows });
     }
 

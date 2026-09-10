@@ -16,26 +16,22 @@ const uz = {
   welcome: (place) => `${place}ga xush kelibsiz!`,
   whatNext: 'Nima qilmoqchisiz?',
 
+  // Bot ataylab UCHTA ishni qiladi, boshqa hech narsani. Menyu, buyurtma
+  // va savat — hammasi ilovada; botda ularning takrori yo'q.
   menu: {
     openApp: '🍽  Menyuni ochish',
-    browse: '📖  Taomlar ro‘yxati',
-    pickTable: '🪑  Hozir keldim — stol tanlash',
-    reserve: '📅  Oldindan stol bron qilish',
-    myOrder: '🧾  Buyurtmam qayerda?',
     callWaiter: '🔔  Ofitsiantni chaqirish',
+    reserve: '📅  Oldindan stol bron qilish',
     lang: '🌐  Til / Язык',
-    help: 'ℹ️  Bu qanday ishlaydi?',
     back: '⬅️  Orqaga',
     cancel: '✖️  Bekor qilish',
   },
 
   help:
-    'Ishlash tartibi juda oddiy:\n\n' +
-    '1️⃣  Stolingizdagi QR kodni skanerlaysiz (yoki shu yerdan bo‘sh stolni tanlaysiz)\n' +
-    '2️⃣  Menyudan taomlarni tanlab, buyurtma berasiz\n' +
-    '3️⃣  Oshxona buyurtmani darhol ko‘radi\n' +
-    '4️⃣  Tayyor bo‘lgach ofitsiant stolingizga olib keladi\n\n' +
-    'Kelajakdagi sana uchun stol ham bron qila olasiz.\n\n' +
+    'Bu bot uchta ish qiladi:\n\n' +
+    '🍽  Menyuni ochadi — taom tanlash va buyurtma ilovada bo‘ladi\n' +
+    '🔔  Ofitsiantni chaqiradi — o‘zingiz tanlagan ofitsiantga xabar boradi\n' +
+    '📅  Kelajakdagi kunga stol bron qiladi\n\n' +
     'Istalgan paytda /bekor buyrug‘i bilan boshidan boshlashingiz mumkin.',
 
   openMenu: '🍽  Menyuni ochish',
@@ -86,10 +82,8 @@ const uz = {
       `✅ Rahmat${name ? `, ${name}` : ''}! Ro‘yxatdan o‘tdingiz.\n\n` +
       'Endi nimalar qila olasiz:\n\n' +
       '🍽  Menyuni ochib, stolingizdan buyurtma berish\n' +
-      '🪑  Hozir kelgan bo‘lsangiz — bo‘sh stolni tanlash\n' +
-      '📅  Kelasi kunga stol bron qilish\n' +
-      '🧾  Buyurtmangiz qay bosqichda ekanini kuzatish\n' +
-      '🔔  Ofitsiantni bir tugma bilan chaqirish',
+      '🔔  Ofitsiantni chaqirish — o‘zingiz tanlaysiz yoki bo‘shini beramiz\n' +
+      '📅  Kelasi kunga stol bron qilish',
 
     back: (name) => `Xush kelibsiz${name ? `, ${name}` : ''}!`,
 
@@ -120,44 +114,32 @@ const uz = {
     valid: (n) => `Bu ${n}-stol. Menyuni ochish uchun quyidagi tugmani bosing 👇`,
     invalid:
       'Bu QR kod ishlamayapti — eskirgan yoki boshqa muassasaniki bo‘lishi mumkin.\n' +
-      'Ofitsiantga aytsangiz yangisini beradi. Yoki quyidan bo‘sh stol tanlang.',
+      'Ofitsiantga aytsangiz yangisini beradi.',
   },
 
-  tables: {
+  // ---------- Ofitsiant chaqirish ----------
+  call: {
+    // 1-qadam: qaysi stol
+    askTable: 'Qaysi stolda o‘tiribsiz?',
+    tableLabel: (n) => `${n}-stol`,
+    noTables: 'Bu muassasada hali stol qo‘shilmagan. Ofitsiantga og‘zaki ayting.',
+
+    // 2-qadam: qaysi ofitsiant
+    pick: (n) => `Hozir bo‘sh ofitsiantlar (${n} ta). Kimni chaqiray?`,
+    pickAllBusy:
+      'Hozir hamma ofitsiant band 😔\n' +
+      'Baribir chaqirsak bo‘ladi — birinchi bo‘shagani keladi. Kimni chaqiray?',
+    anyone: '🎲  Farqi yo‘q, kim bo‘sh bo‘lsa',
     none:
-      'Afsuski hozir bo‘sh stol yo‘q 😔\nBir ozdan keyin urinib ko‘ring yoki oldindan bron qiling.',
-    pick: (n) => `Hozir bo‘sh stollar (${n} ta). Qaysi biriga o‘tirasiz?`,
-    label: (n) => `${n}-stol`,
-    claimed: (n) =>
-      `✅ ${n}-stol siz uchun band qilindi.\n\n` +
-      '⏳ Diqqat: 15 daqiqa ichida buyurtma bermasangiz, stol avtomatik bo‘shatiladi.',
-    taken: 'Bu stolni sizdan oldin band qilishdi 😔 Boshqasini tanlang.',
-    already: (n) => `Siz allaqachon ${n}-stoldasiz.`,
-  },
+      'Bu muassasada hali ofitsiant qo‘shilmagan 😔\n' +
+      'Bir ozdan keyin urinib ko‘ring.',
 
-  menuView: {
-    empty: 'Menyu hali to‘ldirilmagan.',
-    title: 'Menyu',
-    pickCategory: 'Qaysi bo‘limni ko‘rasiz?',
-    soldOut: 'tugagan',
-    orderHint: 'Buyurtma berish uchun stolda o‘tirib QR kodni skanerlang yoki stol tanlang.',
-  },
-
-  order: {
-    none: 'Sizda hozircha faol buyurtma yo‘q.',
-    needTable: 'Buning uchun avval stolga o‘tirishingiz kerak — QR kodni skanerlang yoki stol tanlang.',
-    title: 'Buyurtmangiz holati:',
-    statuses: {
-      new: '🆕  Qabul qilindi',
-      accepted: '👍  Oshxona qabul qildi',
-      preparing: '👨‍🍳  Tayyorlanmoqda',
-      ready: '✅  Tayyor — ofitsiant olib kelmoqda',
-      picked_up: '🚶  Ofitsiant olib kelmoqda',
-      delivered: '🍽  Yetkazildi. Yoqimli ishtaha!',
-      paid: '💳  To‘langan. Rahmat!',
-      cancelled: '❌  Bekor qilindi',
-    },
-    waiterCalled: '🔔 Ofitsiant chaqirildi — hozir keladi.',
+    // 3-qadam: yuborildi
+    sent: (waiter, table) =>
+      `🔔 Chaqiruv yuborildi!\n\n` +
+      `${waiter} — ${table}-stolga.\n` +
+      'Hozir yoningizga boradi.',
+    changeTable: '🪑  Boshqa stol',
   },
 
   reserve: {
@@ -212,24 +194,18 @@ const ru = {
 
   menu: {
     openApp: '🍽  Открыть меню',
-    browse: '📖  Список блюд',
-    pickTable: '🪑  Я уже здесь — выбрать стол',
-    reserve: '📅  Забронировать стол',
-    myOrder: '🧾  Где мой заказ?',
     callWaiter: '🔔  Позвать официанта',
+    reserve: '📅  Забронировать стол',
     lang: '🌐  Til / Язык',
-    help: 'ℹ️  Как это работает?',
     back: '⬅️  Назад',
     cancel: '✖️  Отмена',
   },
 
   help:
-    'Всё очень просто:\n\n' +
-    '1️⃣  Сканируете QR-код на своём столе (или выбираете свободный стол здесь)\n' +
-    '2️⃣  Выбираете блюда в меню и оформляете заказ\n' +
-    '3️⃣  Кухня сразу видит заказ\n' +
-    '4️⃣  Когда всё готово, официант приносит его вам\n\n' +
-    'Также можно забронировать стол на будущую дату.\n\n' +
+    'Этот бот делает три вещи:\n\n' +
+    '🍽  Открывает меню — выбор блюд и заказ происходят в приложении\n' +
+    '🔔  Зовёт официанта — сообщение уходит именно тому, кого вы выбрали\n' +
+    '📅  Бронирует стол на будущую дату\n\n' +
     'В любой момент можно начать заново командой /bekor',
 
   openMenu: '🍽  Открыть меню',
@@ -275,10 +251,8 @@ const ru = {
       `✅ Спасибо${name ? `, ${name}` : ''}! Регистрация завершена.\n\n` +
       'Что теперь можно делать:\n\n' +
       '🍽  Открыть меню и заказать прямо со своего стола\n' +
-      '🪑  Если вы уже здесь — выбрать свободный стол\n' +
-      '📅  Забронировать стол на другой день\n' +
-      '🧾  Следить, на каком этапе ваш заказ\n' +
-      '🔔  Позвать официанта одной кнопкой',
+      '🔔  Позвать официанта — выбрать конкретного или любого свободного\n' +
+      '📅  Забронировать стол на другой день',
 
     back: (name) => `С возвращением${name ? `, ${name}` : ''}!`,
 
@@ -309,43 +283,29 @@ const ru = {
     valid: (n) => `Это стол №${n}. Нажмите кнопку ниже, чтобы открыть меню 👇`,
     invalid:
       'Этот QR-код не работает — возможно, он устарел или от другого заведения.\n' +
-      'Попросите официанта дать новый. Или выберите свободный стол ниже.',
+      'Попросите официанта дать новый.',
   },
 
-  tables: {
-    none: 'К сожалению, сейчас нет свободных столов 😔\nПопробуйте позже или забронируйте заранее.',
-    pick: (n) => `Свободных столов сейчас: ${n}. За какой сядете?`,
-    label: (n) => `Стол ${n}`,
-    claimed: (n) =>
-      `✅ Стол №${n} закреплён за вами.\n\n` +
-      '⏳ Внимание: если в течение 15 минут не будет заказа, стол освободится автоматически.',
-    taken: 'Этот стол заняли раньше вас 😔 Выберите другой.',
-    already: (n) => `Вы уже за столом №${n}.`,
-  },
+  // ---------- Вызов официанта ----------
+  call: {
+    askTable: 'За каким столом вы сидите?',
+    tableLabel: (n) => `Стол ${n}`,
+    noTables: 'В этом заведении ещё не добавлены столы. Обратитесь к официанту.',
 
-  menuView: {
-    empty: 'Меню пока не заполнено.',
-    title: 'Меню',
-    pickCategory: 'Какой раздел показать?',
-    soldOut: 'нет в наличии',
-    orderHint: 'Чтобы заказать, отсканируйте QR-код за столом или выберите стол.',
-  },
+    pick: (n) => `Свободных официантов: ${n}. Кого позвать?`,
+    pickAllBusy:
+      'Сейчас все официанты заняты 😔\n' +
+      'Позвать всё равно можно — подойдёт тот, кто освободится первым. Кого позвать?',
+    anyone: '🎲  Без разницы, кто свободен',
+    none:
+      'В этом заведении ещё не добавлены официанты 😔\n' +
+      'Попробуйте чуть позже.',
 
-  order: {
-    none: 'У вас пока нет активных заказов.',
-    needTable: 'Для этого сначала нужно сесть за стол — отсканируйте QR-код или выберите стол.',
-    title: 'Статус вашего заказа:',
-    statuses: {
-      new: '🆕  Принят',
-      accepted: '👍  Кухня приняла',
-      preparing: '👨‍🍳  Готовится',
-      ready: '✅  Готово — официант несёт',
-      picked_up: '🚶  Официант несёт',
-      delivered: '🍽  Подано. Приятного аппетита!',
-      paid: '💳  Оплачено. Спасибо!',
-      cancelled: '❌  Отменён',
-    },
-    waiterCalled: '🔔 Официант вызван — сейчас подойдёт.',
+    sent: (waiter, table) =>
+      `🔔 Вызов отправлен!\n\n` +
+      `${waiter} — к столу №${table}.\n` +
+      'Сейчас подойдёт.',
+    changeTable: '🪑  Другой стол',
   },
 
   reserve: {

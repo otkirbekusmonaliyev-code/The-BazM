@@ -6,6 +6,9 @@ const { getTenantClient, invalidateTenantClient } = require('../../config/tenant
 const { refreshBot, stopBot } = require('../../bot/botManager');
 const provisioning = require('../../services/provisioning');
 const { notInternal, isInternalSlug } = require('../../utils/internal');
+const mailer = require('../../services/mailer');
+const { appUrl } = require('../../utils/links');
+const planLimits = require('../../services/planLimits');
 
 const loginSchema = z.object({
   phone: z.string().min(9),
@@ -161,6 +164,8 @@ async function suspendRestaurant(req, res, next) {
     // Keshdagi ulanishni ham yopamiz — aks holda suspend qilingan restoran
     // keshlangan client orqali ishlashda davom etardi
     invalidateTenantClient(restaurant.slug);
+    // Tarif o'zgargan bo'lishi mumkin — chegaralar keshini ham tozalaymiz
+    planLimits.invalidate(restaurant.slug);
     res.json(restaurant);
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Restoran topilmadi' });
@@ -176,6 +181,8 @@ async function activateRestaurant(req, res, next) {
       select: RESTAURANT_FIELDS,
     });
     invalidateTenantClient(restaurant.slug);
+    // Tarif o'zgargan bo'lishi mumkin — chegaralar keshini ham tozalaymiz
+    planLimits.invalidate(restaurant.slug);
     refreshBot(restaurant.slug);
     res.json(restaurant);
   } catch (err) {
@@ -205,6 +212,8 @@ async function updateRestaurant(req, res, next) {
       select: RESTAURANT_FIELDS,
     });
     invalidateTenantClient(restaurant.slug);
+    // Tarif o'zgargan bo'lishi mumkin — chegaralar keshini ham tozalaymiz
+    planLimits.invalidate(restaurant.slug);
     // Bot tokeni almashtirilgan bo'lishi mumkin — botni qayta ko'taramiz
     refreshBot(restaurant.slug);
     res.json(restaurant);
@@ -305,7 +314,33 @@ async function approveApplication(req, res, next) {
       data: { status: 'approved', reviewedAt: new Date(), restaurantId: restaurant.id },
     });
 
-    res.status(201).json({ restaurant, adminCredentials });
+    // KIRISH MA'LUMOTLARI EGASIGA O'ZI KETADI.
+    //
+    // Avval panel parolni ekranga chiqarardi va platforma egasi uni qo'lda
+    // yetkazishi kerak edi — parol Telegram yoki SMS orqali qo'ldan-qo'lga
+    // o'tardi va tez-tez unutilardi. Endi ariza formasida ko'rsatilgan
+    // pochtaga o'zi yuboriladi.
+    //
+    // Xat jo'namasa ham ariza TASDIQLANGAN holicha qoladi: pochta serveri
+    // yiqilgani uchun muassasa yaratilmay qolishi mumkin emas. Panel
+    // javobdagi `email.sent` ga qarab parolni ekranda ko'rsatishda davom
+    // etadi — ya'ni hech qanday holatda ma'lumot yo'qolmaydi.
+    let email = { sent: false, reason: 'NO_RECIPIENT' };
+    if (application.email && adminCredentials) {
+      const body = mailer.welcomeEmail({
+        placeName: restaurant.name,
+        loginUrl: appUrl(),
+        phone: adminCredentials.phone,
+        password: adminCredentials.password,
+      });
+      email = await mailer.send({ to: application.email, ...body });
+    }
+
+    res.status(201).json({
+      restaurant,
+      adminCredentials,
+      email: { ...email, to: application.email || null },
+    });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
     next(err);

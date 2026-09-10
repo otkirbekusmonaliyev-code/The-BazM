@@ -18,8 +18,9 @@
     "test:edge": "node scripts/smokeTest2.js",
     "test:bot": "node scripts/botTest.js",
     "test:full": "node scripts/fullTest.js",
+    "test:mail": "node scripts/mailTest.js",
     "test:self": "node scripts/selfTestOnce.js",
-    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js",
+    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js && node scripts/mailTest.js",
     "set-password": "node scripts/setPassword.js",
     "reset": "node scripts/resetPlatform.js"
   },
@@ -32,6 +33,7 @@
     "express-rate-limit": "^7.4.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^10.0.3",
     "pg": "^8.12.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.7.5",
@@ -41,6 +43,7 @@
   "devDependencies": {
     "nodemon": "^3.1.4",
     "prisma": "^5.19.1",
+    "smtp-server": "^3.19.10",
     "socket.io-client": "^4.8.3"
   }
 }
