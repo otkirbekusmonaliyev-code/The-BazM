@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="420" height="120" role="img" aria-label="BAZM">
+  <title>BAZM — geometrik harflar</title>
+  <!--
+    B VARIANT — 2-namunaga eng yaqin.
+    Harflar shrift emas, CHIZILGAN: to'g'ri chiziqlardan yig'ilgan.
+    Shuning uchun ular hech qanday kompyuterda almashib ketmaydi va
+    o'tkir burchaklar aynan mo'ljallanganidek qoladi.
+    "A" da ko'ndalang chiziq yo'q — namunadagidek sof uchburchak.
+
+    QALIN-INGICHKA KONTRAST. Birinchi urinishda hamma chiziq bir xil
+    qalinlikda edi va "B" harfi "3" bo'lib o'qilardi. Endi TIK tayoqlar
+    qalin, diagonal va gorizontal chiziqlar ingichka — namunadagi metall
+    ta'sirini beradigan narsa ham aynan shu.
+  -->
+  <defs>
+    <linearGradient id="gb" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#f2e0b6"/>
+      <stop offset="0.4" stop-color="#c6a05c"/>
+      <stop offset="0.62" stop-color="#8a6420"/>
+      <stop offset="1" stop-color="#cda765"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tik tayoqlar: qalin, to'ldirilgan -->
+  <g fill="url(#gb)">
+    <rect x="20" y="10" width="17" height="100"/>
+    <rect x="292" y="10" width="15" height="100"/>
+    <rect x="369" y="10" width="15" height="100"/>
+  </g>
+
+  <!-- Qolgani: ingichka -->
+  <g fill="none" stroke="url(#gb)" stroke-width="9" stroke-linejoin="miter" stroke-miterlimit="10">
+    <!-- B: ikki burchakli kosa -->
+    <path d="M37 14.5 H64 L80 30 V44 L64 59.5 H37"/>
+    <path d="M37 60.5 H72 L90 78 V90 L72 105.5 H37"/>
+
+    <!-- A: ko'ndalang chiziqsiz uchburchak -->
+    <path d="M116 110 L150 10 L184 110"/>
+
+    <!-- Z -->
+    <path d="M208 14.5 H268 L208 105.5 H270"/>
+
+    <!-- M: uchi pastga tushadi -->
+    <path d="M299.5 14 L338 92 L376.5 14"/>
+  </g>
+</svg>

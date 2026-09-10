@@ -14,6 +14,10 @@ export default function PlaceDrawer({ api, restaurantId, onClose, onChanged }) {
   const [leaving, setLeaving] = useState(false);
   const [confirming, setConfirming] = useState(null); // 'suspend' | 'delete' | null
   const [busy, setBusy] = useState(false);
+  const [billing, setBilling] = useState(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payNote, setPayNote] = useState('');
+  const [paying, setPaying] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -24,10 +28,50 @@ export default function PlaceDrawer({ api, restaurantId, onClose, onChanged }) {
       .get(`/super-admin/restaurants/${restaurantId}`)
       .then((r) => alive && setData(r))
       .catch((err) => alive && setError(err.message));
+    api
+      .get(`/super-admin/restaurants/${restaurantId}/billing`)
+      .then((r) => alive && setBilling(r))
+      .catch(() => {});
     return () => {
       alive = false;
     };
   }, [api, restaurantId]);
+
+  // TO'LOVNI QO'LDA TASDIQLASH.
+  //
+  // Muassasa karta orqali o'tkazadi, biz shu yerda "tushdi" deb
+  // belgilaymiz. Qisman to'lov ham qabul qilinadi: qolgan qarz o'z-o'zidan
+  // hisoblanadi va xizmat faqat TO'LIQ to'langanda ochiladi.
+  async function submitPayment(e) {
+    e.preventDefault();
+    const amount = Number(String(payAmount).replace(/\s/g, ''));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Summani to'g'ri kiriting");
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await api.post(`/super-admin/restaurants/${restaurantId}/payments`, {
+        amount,
+        note: payNote.trim() || undefined,
+      });
+      setBilling(res.status);
+      setPayAmount('');
+      setPayNote('');
+      toast.success(
+        res.closed
+          ? "To'liq to'landi — xizmat yana bir oyga ochildi"
+          : `Qabul qilindi. Qolgan qarz: ${money(res.remaining)}`
+      );
+      const fresh = await api.get(`/super-admin/restaurants/${restaurantId}`);
+      setData(fresh);
+      onChanged();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPaying(false);
+    }
+  }
 
   function close() {
     setLeaving(true);
@@ -171,17 +215,99 @@ export default function PlaceDrawer({ api, restaurantId, onClose, onChanged }) {
                 </div>
               </div>
 
-              {data.billingHistory && data.billingHistory.length > 0 && (
+              {billing && (
                 <div className="drawer-section">
-                  <h3>To'lovlar tarixi</h3>
-                  {data.billingHistory.map((b) => (
-                    <div className="kv" key={b.id}>
-                      <span>{dateOnly(b.createdAt)}</span>
-                      <span>
-                        {money(b.amount)} · {b.status}
-                      </span>
+                  <h3>To'lov</h3>
+
+                  <div className="kv">
+                    <span>Holati</span>
+                    <span className={`bill-state ${billing.state}`}>
+                      {billing.state === 'ok' && "Muddat kelmagan"}
+                      {billing.state === 'due_soon' && `${billing.daysLeft} kun qoldi`}
+                      {billing.state === 'overdue' &&
+                        `Muddat otdi · ${billing.graceDaysLeft} kun muhlat`}
+                      {billing.state === 'suspended' && "To'xtatilgan"}
+                    </span>
+                  </div>
+                  <div className="kv">
+                    <span>Oylik</span>
+                    <span>{money(billing.monthlyFee)}</span>
+                  </div>
+                  {billing.dueDate && (
+                    <div className="kv">
+                      <span>Muddat</span>
+                      <span>{dateOnly(billing.dueDate)}</span>
                     </div>
-                  ))}
+                  )}
+                  {billing.creditBalance > 0 && (
+                    <div className="kv">
+                      <span>Ortiqcha qoldiq</span>
+                      <span>{money(billing.creditBalance)}</span>
+                    </div>
+                  )}
+
+                  {billing.invoice ? (
+                    <>
+                      <div className="kv">
+                        <span>Ochiq hisob</span>
+                        <span>{billing.invoice.number}</span>
+                      </div>
+                      <div className="kv">
+                        <span>To'langan</span>
+                        <span>
+                          {money(billing.invoice.paid)} / {money(billing.invoice.amount)}
+                        </span>
+                      </div>
+                      <div className="kv">
+                        <span>Qolgan qarz</span>
+                        <b style={{ color: 'var(--gold)' }}>{money(billing.invoice.remaining)}</b>
+                      </div>
+
+                      <form onSubmit={submitPayment} className="pay-form">
+                        <input
+                          className="input"
+                          inputMode="numeric"
+                          placeholder="Tushgan summa"
+                          value={payAmount}
+                          onChange={(e) => setPayAmount(e.target.value)}
+                        />
+                        <input
+                          className="input"
+                          placeholder="Izoh (ixtiyoriy)"
+                          value={payNote}
+                          onChange={(e) => setPayNote(e.target.value)}
+                        />
+                        <div className="row" style={{ gap: 8 }}>
+                          <button type="submit" className="btn btn-primary btn-sm" disabled={paying}>
+                            {paying ? <span className="spinner" /> : "To'lovni tasdiqlash"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            disabled={paying}
+                            onClick={() => setPayAmount(String(billing.invoice.remaining))}
+                          >
+                            {"To'liq summa"}
+                          </button>
+                        </div>
+                      </form>
+
+                      {billing.invoice.payments.length > 0 && (
+                        <div style={{ marginTop: 12 }}>
+                          {billing.invoice.payments.map((pm) => (
+                            <div className="kv" key={pm.id}>
+                              <span>{dateOnly(pm.createdAt)}</span>
+                              <span>{money(pm.amount)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="drawer-hint">
+                      {"Ochiq hisob yo'q — muddat hali kelmagan. Hisob muddatdan 5 kun oldin o'zi ochiladi."}
+                    </p>
+                  )}
                 </div>
               )}
 

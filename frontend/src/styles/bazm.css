@@ -899,3 +899,26 @@
     flex: 1;
   }
 }
+
+/* ---------- Drawer: to'lov bo'limi ---------- */
+
+.pay-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pay-form .input {
+  width: 100%;
+}
+
+.drawer-hint {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.65;
+  margin: 10px 0 0;
+}
+
+.bill-state.due_soon { color: var(--gold); }
+.bill-state.overdue,
+.bill-state.suspended { color: #d9534f; }

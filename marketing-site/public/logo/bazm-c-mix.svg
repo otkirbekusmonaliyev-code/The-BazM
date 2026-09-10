@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="BazM">
+  <title>BazM — likobcha va asboblar bitta belgida</title>
+  <!--
+    C VARIANT — MIX, favicon uchun eng ishonchlisi.
+    1-namunadagi uchta narsa saqlangan, lekin ZICH joylashtirilgan:
+    asboblar likobchaning ikki yonida, unga tegib turadi.
+    Sabab amaliy — namunadagi keng joylashuv 16px da uchala shakl
+    bir-biriga qo'shilib ketadi va belgi tanib bo'lmas holga keladi.
+    Bu esa kichkina o'lchamda ham "likobcha" bo'lib qolaveradi.
+  -->
+  <defs>
+    <linearGradient id="gc" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#eed9a8"/>
+      <stop offset="0.5" stop-color="#c6a05c"/>
+      <stop offset="1" stop-color="#8a6420"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="url(#gc)">
+    <!-- SANCHQI (chapda) -->
+    <path transform="translate(6 16) scale(0.42)" d="
+      M 0,0 L 15,0 L 15,46 L 22.5,46 L 22.5,0 L 37.5,0 L 37.5,46 L 45,46 L 45,0 L 60,0
+      L 60,52 C 60,66 51,73 41,75
+      L 41,171 A 11,11 0 0 1 19,171
+      L 19,75 C 9,73 0,66 0,52 Z"/>
+
+    <!-- QOSHIQ (o'ngda) -->
+    <g transform="translate(89 16) scale(0.42)">
+      <ellipse cx="30" cy="38" rx="30" ry="42"/>
+      <path d="M 21,76 L 39,76 L 39,171 A 9,9 0 0 1 21,171 Z"/>
+    </g>
+  </g>
+
+  <!-- LIKOBCHA -->
+  <circle cx="60" cy="60" r="34" fill="none" stroke="url(#gc)" stroke-width="8"/>
+  <circle cx="60" cy="60" r="21" fill="url(#gc)" opacity="0.22"/>
+  <circle cx="60" cy="60" r="21" fill="none" stroke="url(#gc)" stroke-width="4"/>
+</svg>

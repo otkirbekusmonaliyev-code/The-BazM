@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="300" height="400" role="img" aria-label="BazM">
+  <title>BazM — sanchqi, likobcha, qoshiq</title>
+  <!--
+    A VARIANT — 1-namunaga eng yaqin.
+    Shakllar TO'LDIRILGAN, ingichka chiziq emas: namunada ham shunday va
+    aynan shu narsa belgini "og'ir" va ishonchli qiladi. Ingichka chiziqli
+    birinchi urinish kichik o'lchamda yo'qolib ketardi.
+    Rang — loyihaning oltini, ustidan yumshoq gradient.
+  -->
+  <defs>
+    <linearGradient id="ga" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#eed9a8"/>
+      <stop offset="0.5" stop-color="#c6a05c"/>
+      <stop offset="1" stop-color="#9b7433"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="url(#ga)">
+    <!-- SANCHQI: uchta tish, ikkita o'yiq, keyin dastasi -->
+    <path transform="translate(18 62)" d="
+      M 0,0 L 15,0 L 15,46 L 22.5,46 L 22.5,0 L 37.5,0 L 37.5,46 L 45,46 L 45,0 L 60,0
+      L 60,52 C 60,66 51,73 41,75
+      L 41,171 A 11,11 0 0 1 19,171
+      L 19,75 C 9,73 0,66 0,52 Z"/>
+
+    <!-- QOSHIQ: kosa va dasta -->
+    <g transform="translate(222 62)">
+      <ellipse cx="30" cy="38" rx="30" ry="42"/>
+      <path d="M 21,76 L 39,76 L 39,171 A 9,9 0 0 1 21,171 Z"/>
+    </g>
+  </g>
+
+  <!-- LIKOBCHA: tashqi gardish, ichki taglik -->
+  <circle cx="150" cy="152" r="60" fill="none" stroke="url(#ga)" stroke-width="13"/>
+  <circle cx="150" cy="152" r="39" fill="url(#ga)" opacity="0.22"/>
+  <circle cx="150" cy="152" r="39" fill="none" stroke="url(#ga)" stroke-width="5.5"/>
+
+  <!-- BazM -->
+  <text x="150" y="352" text-anchor="middle"
+        font-family="Fraunces, Georgia, serif" font-size="76" font-weight="700"
+        fill="url(#ga)">BazM</text>
+</svg>
