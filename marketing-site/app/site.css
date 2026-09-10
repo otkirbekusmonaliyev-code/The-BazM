@@ -278,3 +278,156 @@
     padding: 8px 0;
   }
 }
+
+/* ============================================================
+   SO'ROV HOLATI SAHIFASI (/holat)
+   ============================================================ */
+
+.status-card {
+  text-align: center;
+  position: relative;
+}
+
+.status-card h1 {
+  margin-bottom: 8px;
+}
+
+/* Holat belgisi — matndan oldin ko'zga tashlanadi */
+.status-mark {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+
+.status-mark.approved {
+  color: #4caf50;
+  border-color: color-mix(in srgb, #4caf50 45%, transparent);
+  background: color-mix(in srgb, #4caf50 12%, transparent);
+}
+
+.status-mark.rejected {
+  color: #d9534f;
+  border-color: color-mix(in srgb, #d9534f 45%, transparent);
+  background: color-mix(in srgb, #d9534f 12%, transparent);
+}
+
+.status-mark.pending {
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+
+/* Google tugmasi o'rtada tursin */
+.status-gsi {
+  display: flex;
+  justify-content: center;
+  margin: 22px 0 6px;
+  min-height: 44px;
+}
+
+.status-why,
+.status-meta {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+/* Kirish ma'lumotlari — o'qishga qulay bo'lishi shart, odam ularni
+   ko'chirib oladi */
+.status-creds {
+  margin: 22px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  text-align: left;
+  background: color-mix(in srgb, var(--card) 55%, transparent);
+}
+
+.status-creds > div {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-soft, var(--border));
+}
+
+.status-creds > div:last-child {
+  border-bottom: 0;
+}
+
+.status-creds span {
+  flex: 0 0 110px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.status-creds b {
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.status-creds .mono {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+  color: var(--gold);
+}
+
+.status-note {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.status-note.warn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--text);
+  text-align: left;
+}
+
+.status-actions,
+.form-success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.status-signout {
+  margin-top: 18px;
+  opacity: 0.7;
+}
+
+/* So'rov yuborilgach: javob qayerdan kelishi ko'rinadigan joyda */
+.form-success-where {
+  max-width: 420px;
+  margin: 14px auto 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--gold) 32%, transparent);
+  background: color-mix(in srgb, var(--gold) 9%, transparent);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+@media (max-width: 520px) {
+  .status-creds > div {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .status-creds span {
+    flex: none;
+  }
+}

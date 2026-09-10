@@ -256,6 +256,12 @@ export function Footer({ lang }) {
               <li>
                 <Link href={applyPath}>{c.nav.apply}</Link>
               </li>
+              {/* So'rov yuborgan odam keyin ham qaytib javobni ko'ra olsin —
+                  faqat muvaffaqiyat ekranidagi havola yetarli emas, u
+                  sahifani yopgach yo'qoladi */}
+              <li>
+                <Link href={lang === 'ru' ? '/ru/holat' : '/holat'}>{c.status.title}</Link>
+              </li>
               <li style={{ opacity: 0.55 }}>{c.footer.blogSoon}</li>
             </ul>
           </div>

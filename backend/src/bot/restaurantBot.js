@@ -480,6 +480,16 @@ function createRestaurantBot({ token, slug, name }) {
   //
   // Endi ikki qadam: qaysi stol -> qaysi ofitsiant. Xabar AYNAN o'sha
   // ofitsiantga boradi, "hamma ko'radi, hech kim bormaydi" holati yo'q.
+  //
+  // STOL HAR SAFAR QAYTA SO'RALADI va hech qachon eslab qolinmaydi.
+  // Sabab oddiy: odam ertaga boshqa stolga o'tiradi. Bir marta tanlangan
+  // stolni keyingi safar ham ishlatish — ofitsiantni ATAYLAB noto'g'ri
+  // stolga yuborish degani, va mijoz buni chaqiruv ketgandan keyingina
+  // bilib qoladi. Bitta ortiqcha tugma bosish bundan ancha arzon.
+  //
+  // Shu sababli tanlov `s.table` da EMAS, alohida `s.call` da turadi:
+  // `s.table` QR kod bilan bog'liq (Mini App havolasi uchun), `s.call` esa
+  // faqat shu chaqiruv uchun yashaydi va yuborilishi bilan o'chadi.
 
   const tableRows = (c, tables) => {
     const rows = [];
@@ -493,7 +503,7 @@ function createRestaurantBot({ token, slug, name }) {
     return rows;
   };
 
-  // 2-qadam. Stol ma'lum — endi kimni chaqirishni so'raymiz.
+  // 2-qadam. Stol tanlandi — endi kimni chaqirishni so'raymiz.
   async function askWaiter(ctx, c, s) {
     const db = await getTenantClient(slug);
     const { waiters, allBusy } = await waiterCalls.listCallableWaiters(db);
@@ -514,10 +524,10 @@ function createRestaurantBot({ token, slug, name }) {
     rows.push(backRow(c));
 
     const head = allBusy ? c.call.pickAllBusy : c.call.pick(waiters.length);
-    return show(ctx, `${c.call.tableLabel(s.table.number)}\n\n${head}`, Markup.inlineKeyboard(rows));
+    return show(ctx, `${c.call.tableLabel(s.call.number)}\n\n${head}`, Markup.inlineKeyboard(rows));
   }
 
-  // 1-qadam. Stolni bilmasak — so'raymiz. Bilsak — darhol ikkinchi qadamga.
+  // 1-qadam. Har safar shu yerdan boshlanadi.
   async function askTable(ctx, c) {
     const db = await getTenantClient(slug);
     const tables = await waiterCalls.listTables(db);
@@ -535,19 +545,20 @@ function createRestaurantBot({ token, slug, name }) {
     const { s, c } = ctxOf(ctx);
     if (!(await requireRegistration(ctx, c))) return null;
     await ctx.answerCbQuery();
+    // Eski tanlov qolib ketmasin — har chaqiruv toza varaqdan boshlanadi
+    s.call = null;
     try {
-      // QR kod bilan kelgan bo'lsa stol allaqachon ma'lum — so'ramaymiz
-      if (s.table && s.table.id && s.table.number) return await askWaiter(ctx, c, s);
       return await askTable(ctx, c);
     } catch (err) {
       return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
     }
   });
 
+  // Ofitsiant tanlash ekranidan stol tanlashga qaytish
   bot.action('cw_change', async (ctx) => {
     await ctx.answerCbQuery();
     const { s, c } = ctxOf(ctx);
-    s.table = null;
+    s.call = null;
     try {
       return await askTable(ctx, c);
     } catch (err) {
@@ -564,8 +575,9 @@ function createRestaurantBot({ token, slug, name }) {
       const table = tables.find((t) => t.id === ctx.match[1]);
       if (!table) return await askTable(ctx, c);
 
-      // Stolni eslab qolamiz: keyingi chaqiruvda qayta so'ramaymiz
-      s.table = { id: table.id, number: table.tableNumber, token: s.table ? s.table.token : null };
+      // FAQAT shu chaqiruv uchun. Yuborilgach o'chadi — keyingi safar
+      // odam boshqa stolda o'tirgan bo'lishi mumkin.
+      s.call = { id: table.id, number: table.tableNumber };
       return await askWaiter(ctx, c, s);
     } catch (err) {
       return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
@@ -575,15 +587,18 @@ function createRestaurantBot({ token, slug, name }) {
   // Aniq ofitsiant yoki "farqi yo'q" — ikkalasi ham shu yerga tushadi
   async function sendCall(ctx, waiterId) {
     const { s, c } = ctxOf(ctx);
-    if (!s.table || !s.table.id) return askTable(ctx, c);
+    if (!s.call || !s.call.id) return askTable(ctx, c);
 
     try {
       const db = await getTenantClient(slug);
       const { waiter, tableNumber } = await waiterCalls.call(slug, db, {
-        tableId: s.table.id,
+        tableId: s.call.id,
         waiterId,
         clientName: (s.customer && s.customer.firstName) || ctx.from.first_name || 'Mehmon',
       });
+      // Tanlov ishlatildi — o'chiramiz. Keyingi chaqiruv stolni qaytadan
+      // so'raydi, chunki odam allaqachon boshqa joyda o'tirgan bo'lishi mumkin.
+      s.call = null;
       return show(
         ctx,
         c.call.sent(waiter.fullName, tableNumber),
@@ -593,11 +608,11 @@ function createRestaurantBot({ token, slug, name }) {
         ])
       );
     } catch (err) {
+      s.call = null;
       if (err.code === 'NO_WAITERS') {
         return show(ctx, c.call.none, Markup.inlineKeyboard([backRow(c)]));
       }
       if (err.code === 'TABLE_NOT_FOUND') {
-        s.table = null;
         return askTable(ctx, c);
       }
       console.error(`   [bot:${slug}] chaqiruv yuborilmadi:`, err.message);

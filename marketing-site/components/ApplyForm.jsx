@@ -108,9 +108,20 @@ export default function ApplyForm({ lang, regions }) {
           <div className="form-success-mark">✓</div>
           <h2>{c.form.successTitle}</h2>
           <p>{c.form.successText}</p>
-          <Link href={lang === 'ru' ? '/ru' : '/'} className="btn btn-ghost">
-            {c.form.back}
-          </Link>
+
+          {/* Odam formani yuborgach "endi nima bo'ladi?" degan savol bilan
+              qoladi. Javob QAYERDAN kelishini aynan shu yerda aytamiz —
+              tugmalar yonida, ko'rinadigan joyda. */}
+          <p className="form-success-where">{c.form.successWhere}</p>
+
+          <div className="form-success-actions">
+            <Link href={lang === 'ru' ? '/ru/holat' : '/holat'} className="btn btn-primary">
+              <span>{c.form.successCheck}</span>
+            </Link>
+            <Link href={lang === 'ru' ? '/ru' : '/'} className="btn btn-ghost">
+              {c.form.back}
+            </Link>
+          </div>
         </div>
       </div>
     );

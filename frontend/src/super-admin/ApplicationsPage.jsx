@@ -35,10 +35,18 @@ export default function ApplicationsPage({ api, onChanged }) {
     load();
   }, [load]);
 
+  // Sabab ixtiyoriy, lekin yozilsa — ariza egasi uni saytdan ko'radi.
+  // "Rad etildi" degan quruq javob odamda faqat savol qoldiradi.
   async function reject(id) {
+    const note = window.prompt(
+      'Rad etish sababi (ixtiyoriy).\n\nYozsangiz, ariza egasi uni saytdagi "So\'rov holati" sahifasida ko\'radi.',
+      ''
+    );
+    if (note === null) return; // bekor qilindi
+
     setBusyId(id);
     try {
-      await api.patch(`/super-admin/applications/${id}/reject`);
+      await api.patch(`/super-admin/applications/${id}/reject`, { note: note.trim() || undefined });
       toast.info('Ariza rad etildi');
       await load();
       onChanged();

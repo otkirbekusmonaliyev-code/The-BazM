@@ -145,8 +145,56 @@ export const dict = {
       submitting: 'Yuborilmoqda…',
       successTitle: 'So\'rovingiz qabul qilindi',
       successText: 'Tez orada siz bilan bog\'lanamiz. Odatda bu bir ish kunidan oshmaydi.',
+      // Odam formani yuborgach "endi nima bo'ladi?" degan savol bilan
+      // qoladi. Javob qayerdan kelishini AYNAN shu yerda aytamiz.
+      successWhere:
+        'Javobni shu saytning o\'zidan bilib olasiz: so\'rovingiz tasdiqlangani '
+        + 'yoki rad etilganini tez orada quyidagi sahifada ko\'rishingiz mumkin.',
+      successCheck: 'So\'rov holatini tekshirish',
       back: 'Bosh sahifaga',
       required: 'Majburiy maydon',
+    },
+
+    // ---------- So'rov holati sahifasi ----------
+    status: {
+      title: 'So\'rovingiz holati',
+      subtitle:
+        'So\'rovda ko\'rsatgan pochtangiz bilan kiring — javobni shu yerda ko\'rasiz.',
+      signIn: 'Google hisobi bilan davom etish',
+      signingIn: 'Tekshirilmoqda…',
+      why: 'Nega Google? Chunki javob ichida kirish paroli bo\'ladi — u faqat pochta egasiga ko\'rinishi kerak.',
+
+      notConfigured:
+        'Google bilan kirish hozircha sozlanmagan. Iltimos, biz bilan bog\'laning — javobni to\'g\'ridan-to\'g\'ri aytamiz.',
+
+      notFoundTitle: 'Bu pochta bilan so\'rov topilmadi',
+      notFoundText:
+        'Boshqa pochta bilan yuborgan bo\'lishingiz mumkin. Aynan so\'rovda yozgan pochtangiz bilan kirib ko\'ring, yoki yangi so\'rov yuboring.',
+
+      pendingTitle: 'So\'rovingiz ko\'rib chiqilmoqda',
+      pendingText:
+        'Hali javob berilmadi. Odatda bu bir ish kunidan oshmaydi — birozdan keyin shu yerga qaytib qarang.',
+
+      rejectedTitle: 'So\'rovingiz tasdiqlanmadi',
+      rejectedText:
+        'Afsuski bu safar qo\'sha olmadik. Vaziyat o\'zgargan bo\'lsa yangi so\'rov yuborishingiz mumkin — yoki biz bilan bog\'lansangiz, sababini batafsil aytamiz.',
+      rejectedNote: 'Sabab:',
+
+      approvedTitle: 'Tabriklaymiz — so\'rovingiz tasdiqlandi!',
+      approvedText: 'Quyidagi ma\'lumotlar bilan tizimga kiring:',
+      fieldPlace: 'Muassasa',
+      fieldUrl: 'Manzil',
+      fieldPhone: 'Telefon',
+      fieldPassword: 'Parol',
+      passwordOnce:
+        'Parol faqat SHU SAFAR ko\'rsatiladi — uni yozib oling. Birinchi kirishdan keyin almashtiring.',
+      passwordGone:
+        'Parolni allaqachon ko\'rgansiz, shuning uchun u qaytadan ko\'rsatilmaydi. Yo\'qotgan bo\'lsangiz biz bilan bog\'laning.',
+      openApp: 'Tizimga kirish',
+      signOut: 'Chiqish',
+      sentAt: 'Yuborilgan',
+      answeredAt: 'Javob berilgan',
+      failed: 'Tekshirib bo\'lmadi. Birozdan keyin qayta urinib ko\'ring.',
     },
     footer: {
       tagline: 'Restoran va kafelar uchun buyurtma va boshqaruv platformasi',
@@ -297,9 +345,53 @@ export const dict = {
       submitting: 'Отправляем…',
       successTitle: 'Заявка принята',
       successText: 'Мы свяжемся с вами в ближайшее время — обычно в течение рабочего дня.',
+      successWhere:
+        'Ответ вы узнаете прямо на этом сайте: одобрена ваша заявка или отклонена — '
+        + 'можно будет посмотреть на странице ниже.',
+      successCheck: 'Проверить статус заявки',
       back: 'На главную',
       required: 'Обязательное поле',
     },
+    status: {
+      title: 'Статус вашей заявки',
+      subtitle: 'Войдите с той почтой, которую указали в заявке — ответ будет здесь.',
+      signIn: 'Продолжить с аккаунтом Google',
+      signingIn: 'Проверяем…',
+      why: 'Почему Google? В ответе есть пароль для входа — его должен видеть только владелец почты.',
+
+      notConfigured:
+        'Вход через Google пока не настроен. Пожалуйста, свяжитесь с нами — мы сообщим ответ напрямую.',
+
+      notFoundTitle: 'Заявка с этой почтой не найдена',
+      notFoundText:
+        'Возможно, вы отправляли её с другой почты. Попробуйте войти с той, что указывали в заявке, или отправьте новую.',
+
+      pendingTitle: 'Заявка на рассмотрении',
+      pendingText:
+        'Ответа пока нет. Обычно это занимает не больше рабочего дня — загляните сюда чуть позже.',
+
+      rejectedTitle: 'Заявка не одобрена',
+      rejectedText:
+        'К сожалению, в этот раз не получилось. Если обстоятельства изменились, можно отправить новую заявку — или свяжитесь с нами, и мы расскажем подробнее.',
+      rejectedNote: 'Причина:',
+
+      approvedTitle: 'Поздравляем — заявка одобрена!',
+      approvedText: 'Войдите в систему с этими данными:',
+      fieldPlace: 'Заведение',
+      fieldUrl: 'Адрес',
+      fieldPhone: 'Телефон',
+      fieldPassword: 'Пароль',
+      passwordOnce:
+        'Пароль показывается ТОЛЬКО СЕЙЧАС — запишите его. После первого входа смените.',
+      passwordGone:
+        'Вы уже видели пароль, поэтому он больше не показывается. Если потеряли — свяжитесь с нами.',
+      openApp: 'Войти в систему',
+      signOut: 'Выйти',
+      sentAt: 'Отправлена',
+      answeredAt: 'Ответ дан',
+      failed: 'Не удалось проверить. Попробуйте чуть позже.',
+    },
+
     footer: {
       tagline: 'Платформа заказов и управления для ресторанов и кафе',
       contact: 'Контакты',

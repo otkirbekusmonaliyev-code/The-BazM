@@ -20,9 +20,10 @@
     "test:full": "node scripts/fullTest.js",
     "test:mail": "node scripts/mailTest.js",
     "test:self": "node scripts/selfTestOnce.js",
-    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js && node scripts/mailTest.js",
+    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js && node scripts/mailTest.js && node scripts/statusTest.js",
     "set-password": "node scripts/setPassword.js",
-    "reset": "node scripts/resetPlatform.js"
+    "reset": "node scripts/resetPlatform.js",
+    "test:status": "node scripts/statusTest.js"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",
@@ -31,6 +32,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
+    "google-auth-library": "^11.0.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^10.0.3",

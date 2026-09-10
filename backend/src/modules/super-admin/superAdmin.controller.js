@@ -9,6 +9,7 @@ const { notInternal, isInternalSlug } = require('../../utils/internal');
 const mailer = require('../../services/mailer');
 const { appUrl } = require('../../utils/links');
 const planLimits = require('../../services/planLimits');
+const applicationStatus = require('../../services/applicationStatus');
 
 const loginSchema = z.object({
   phone: z.string().min(9),
@@ -309,9 +310,19 @@ async function approveApplication(req, res, next) {
       adminPassword: req.body.adminPassword,
     });
 
+    // Parolni SHIFRLANGAN holda saqlaymiz: ariza egasi uni saytdan
+    // (Google hisobi bilan kirib) o'zi olib ketadi. Bir marta ko'rsatilgach
+    // yozuv tozalanadi — parol bazada abadiy yotib qolmasligi kerak.
     await masterPrisma.restaurantApplication.update({
       where: { id: application.id },
-      data: { status: 'approved', reviewedAt: new Date(), restaurantId: restaurant.id },
+      data: {
+        status: 'approved',
+        reviewedAt: new Date(),
+        restaurantId: restaurant.id,
+        adminPasswordEnc: adminCredentials
+          ? applicationStatus.sealPassword(adminCredentials.password)
+          : null,
+      },
     });
 
     // KIRISH MA'LUMOTLARI EGASIGA O'ZI KETADI.
@@ -349,9 +360,13 @@ async function approveApplication(req, res, next) {
 
 async function rejectApplication(req, res, next) {
   try {
+    // Sabab ixtiyoriy, lekin yozilsa — ariza egasi uni saytdan ko'radi.
+    // "Rad etildi" degan quruq javob odamda savol qoldiradi.
+    const note = typeof req.body.note === 'string' ? req.body.note.trim().slice(0, 500) : '';
+
     const application = await masterPrisma.restaurantApplication.update({
       where: { id: req.params.id },
-      data: { status: 'rejected', reviewedAt: new Date() },
+      data: { status: 'rejected', reviewedAt: new Date(), reviewNote: note || null },
     });
     res.json(application);
   } catch (err) {

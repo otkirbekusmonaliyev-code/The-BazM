@@ -40,7 +40,7 @@ model SuperAdmin {
   id           String   @id @default(uuid())
   fullName     String
   phone        String   @unique // login: +998901234567 kabi formatda
-  email        String?          // ixtiyoriy, faqat aloqa uchun
+  email        String? // ixtiyoriy, faqat aloqa uchun
   passwordHash String
   createdAt    DateTime @default(now())
 }
@@ -49,45 +49,59 @@ model SuperAdmin {
 // Super Admin tasdiqlagach — Restaurant yozuvi yaratiladi va provisioning ishga tushadi.
 model RestaurantApplication {
   id           String                      @id @default(uuid())
-  name         String                      // restoran/kafe nomi
+  name         String // restoran/kafe nomi
   businessType BusinessType                @default(restaurant)
   phone        String
-  email        String?                     // ixtiyoriy
-  region       String                      // viloyat
-  city         String                      // shahar/tuman
-  description  String?                     // ixtiyoriy izoh
+  email        String? // ixtiyoriy
+  region       String // viloyat
+  city         String // shahar/tuman
+  description  String? // ixtiyoriy izoh
   plan         SubscriptionPlan            @default(basic)
   status       RestaurantApplicationStatus @default(pending)
   // Tasdiqlangach yaratilgan restoranga havola (audit uchun)
   restaurantId String?
   createdAt    DateTime                    @default(now())
   reviewedAt   DateTime?
+
+  // JAVOB SAYTNING O'ZIDA BERILADI.
+  //
+  // Ariza egasi natijani bilish uchun saytga Google hisobi bilan kiradi
+  // (arizadagi pochta bilan bir xil bo'lishi kerak) va shu yerdan javob
+  // oladi. Shuning uchun javob ma'lumotlari shu yozuvda saqlanadi.
+  //
+  // `adminPasswordEnc` — bir martalik parol, shifrlangan holda (tenant
+  // baza parollari bilan bir xil kalit). Egasi bir marta ko'rgach TOZALANADI:
+  // parol bazada abadiy yotib qolmasligi kerak.
+  adminPasswordEnc  String?
+  credentialsSeenAt DateTime?
+  // Rad etilgan bo'lsa — qisqa sabab. Bo'sh bo'lsa umumiy matn ko'rsatiladi.
+  reviewNote        String?
 }
 
 model Restaurant {
-  id                  String             @id @default(uuid())
-  name                String
-  slug                String             @unique // subdomain: delish -> delish.bazm.uz
-  businessType        BusinessType       @default(restaurant)
-  logoUrl             String?
-  telegramBotToken    String?
+  id               String       @id @default(uuid())
+  name             String
+  slug             String       @unique // subdomain: delish -> delish.bazm.uz
+  businessType     BusinessType @default(restaurant)
+  logoUrl          String?
+  telegramBotToken String?
 
   // Tenant bazasiga ulanish ma'lumotlari (parol shifrlangan holda saqlanadi!)
   dbName              String
   dbHost              String
-  dbPort              Int                @default(5432)
+  dbPort              Int    @default(5432)
   dbUser              String
   dbPasswordEncrypted String
 
-  subscriptionPlan    SubscriptionPlan   @default(basic)
-  subscriptionStatus  SubscriptionStatus @default(trial)
-  monthlyFee          Decimal            @default(0)
-  nextBillingDate     DateTime?
+  subscriptionPlan   SubscriptionPlan   @default(basic)
+  subscriptionStatus SubscriptionStatus @default(trial)
+  monthlyFee         Decimal            @default(0)
+  nextBillingDate    DateTime?
 
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  billingHistory      BillingRecord[]
+  billingHistory BillingRecord[]
 }
 
 model BillingRecord {
@@ -95,7 +109,7 @@ model BillingRecord {
   restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
   restaurantId  String
   amount        Decimal
-  status        String     // paid, failed, pending
+  status        String // paid, failed, pending
   invoiceNumber String
   paidAt        DateTime?
   createdAt     DateTime   @default(now())
@@ -116,7 +130,7 @@ model BillingRecord {
 model StaffLookup {
   phone          String   @id
   restaurantSlug String
-  role           String   // admin | kitchen | waiter
+  role           String // admin | kitchen | waiter
   isActive       Boolean  @default(true)
   updatedAt      DateTime @updatedAt
 

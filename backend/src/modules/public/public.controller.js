@@ -7,6 +7,7 @@ const { REGIONS } = require('../../data/uzbekistanRegions');
 const { PLAN_PRICES } = require('../../services/provisioning');
 const { notInternal } = require('../../utils/internal');
 const planLimits = require('../../services/planLimits');
+const applicationStatus = require('../../services/applicationStatus');
 
 const applicationSchema = z.object({
   name: z.string().min(2, 'Restoran/kafe nomi kamida 2 belgi'),
@@ -186,4 +187,45 @@ function listRegions(req, res) {
   res.json(REGIONS);
 }
 
-module.exports = { submitApplication, searchPlaces, publicStats, listPlans, listRegions };
+// Sayt uchun ochiq sozlamalar. Google mijoz ID'si BITTA joyda (.env)
+// turishi uchun sayt uni shu yerdan oladi — ikki joyda yozilsa, ular
+// bir-biridan farq qilib qolishi aniq.
+function siteConfig(req, res) {
+  res.json({
+    googleClientId: applicationStatus.clientId() || null,
+    googleEnabled: applicationStatus.isConfigured(),
+  });
+}
+
+// ARIZA HOLATI — ariza egasining o'zi ko'radi.
+//
+// Google tokeni pochtaning haqiqatan shu odamniki ekanini isbotlaydi;
+// shundan keyingina javob (va tasdiqlangan bo'lsa — parol) beriladi.
+const statusSchema = z.object({ credential: z.string().min(20) });
+
+async function applicationStatus_(req, res, next) {
+  try {
+    const { credential } = statusSchema.parse(req.body);
+    const { email, name } = await applicationStatus.emailFromGoogle(credential);
+    const result = await applicationStatus.statusFor(email);
+    res.json({ ...result, email, googleName: name });
+  } catch (err) {
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'So\'rov noto\'g\'ri' });
+    }
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message, code: err.code });
+    }
+    next(err);
+  }
+}
+
+module.exports = {
+  submitApplication,
+  searchPlaces,
+  publicStats,
+  listPlans,
+  listRegions,
+  siteConfig,
+  applicationStatus: applicationStatus_,
+};

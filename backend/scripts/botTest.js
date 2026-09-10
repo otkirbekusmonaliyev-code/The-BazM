@@ -362,25 +362,89 @@ async function main() {
       );
 
       // ---- "Farqi yo'q" — tavakkaliga tanlansin ----
+      //
+      // Yangi oqim sifatida: chaqiruv yuborilgach tanlov o\'chadi, shuning
+      // uchun stol qaytadan tanlanadi.
       emitted.length = 0;
+      await bot.handleUpdate(callbackUpdate(caller, 'call_waiter'));
+      const anyStep = lastScreen().buttons.filter((b) => b.data && b.data.startsWith('cw_t_'));
+      await bot.handleUpdate(callbackUpdate(caller, anyStep[0].data));
       await bot.handleUpdate(callbackUpdate(caller, 'cw_any'));
       check('tavakkaliga chaqiruv ham ishladi', lastScreen().text.includes('Chaqiruv yuborildi'));
       const anyPersonal = emitted.filter((e) => e.event === 'waiter_called' && /_waiter_/.test(e.room));
       check('bittasi tanlandi', anyPersonal.length === 1, `${anyPersonal.length} ta`);
 
-      // ---- Stol eslab qolinadi ----
+      // ---- Chaqiruv yuborilgach eski ekran "osilib" qolmaydi ----
+      //
+      // Odam suhbatni yuqoriga aylantirib, eski "kimni chaqiray?" xabaridagi
+      // tugmani bosishi mumkin. O\'shanda eski stolga chaqiruv ketmasligi,
+      // balki stol qaytadan so\'ralishi kerak.
+      emitted.length = 0;
+      await bot.handleUpdate(callbackUpdate(caller, 'cw_any'));
+      check(
+        'eski tugma bosilsa stol qayta so\'raldi',
+        lastScreen().text.includes('Qaysi stolda'),
+        firstLine(lastScreen().text)
+      );
+      check(
+        'eski stolga chaqiruv KETMADI',
+        emitted.filter((e) => e.event === 'waiter_called').length === 0
+      );
+
+      // ---- Stol ESLAB QOLINMAYDI ----
+      //
+      // Odam ertaga boshqa stolga o\'tiradi. Bir marta tanlangan stolni
+      // keyingi safar ham ishlatish — ofitsiantni ataylab noto\'g\'ri stolga
+      // yuborish degani, va mijoz buni chaqiruv ketgandan keyin biladi.
       await bot.handleUpdate(callbackUpdate(caller, 'home'));
       await bot.handleUpdate(callbackUpdate(caller, 'call_waiter'));
       const again = lastScreen();
       check(
-        'ikkinchi marta stol qayta SO\'RALMADI',
-        again.buttons.some((b) => b.data && b.data.startsWith('cw_w_')),
+        'ikkinchi marta stol QAYTA so\'raldi',
+        again.text.includes('Qaysi stolda'),
         firstLine(again.text)
+      );
+      check(
+        'ofitsiantlar ro\'yxatiga sakrab o\'tilmadi',
+        !again.buttons.some((b) => b.data && b.data.startsWith('cw_w_'))
+      );
+
+      // Endi BOSHQA stolni tanlaymiz — chaqiruv aynan o\'shanga ketishi kerak
+      const otherBtns = again.buttons.filter((b) => b.data && b.data.startsWith('cw_t_'));
+      const second = otherBtns[1] || otherBtns[0];
+      const wantNumber = Number(second.text.replace(/\D/g, ''));
+      emitted.length = 0;
+      await bot.handleUpdate(callbackUpdate(caller, second.data));
+      await bot.handleUpdate(callbackUpdate(caller, 'cw_any'));
+      const secondCall = emitted.find((e) => e.event === 'waiter_called' && /_waiter_/.test(e.room));
+      check(
+        'chaqiruv YANGI tanlangan stolga ketdi',
+        !!secondCall && secondCall.payload.tableNumber === wantNumber,
+        secondCall ? `${secondCall.payload.tableNumber}-stol (kutilgan: ${wantNumber})` : 'chaqiruv yo\'q'
       );
 
       // ---- "Boshqa stol" tugmasi ----
+      await bot.handleUpdate(callbackUpdate(caller, 'call_waiter'));
+      await bot.handleUpdate(callbackUpdate(caller, tableBtns[0].data));
       await bot.handleUpdate(callbackUpdate(caller, 'cw_change'));
       check('boshqa stolga o\'tish ishladi', lastScreen().text.includes('Qaysi stolda'));
+
+      // ---- QR bilan kelgan odamdan ham stol so\'raladi ----
+      //
+      // QR bir soat oldin skanerlangan bo\'lishi mumkin, odam esa
+      // allaqachon boshqa stolga ko\'chib o\'tirgan bo\'ladi.
+      const qrGuest = newUser();
+      const someTable = await db.restaurantTable.findFirst({ orderBy: { tableNumber: 'asc' } });
+      await bot.handleUpdate(textUpdate(qrGuest, `/start t_${someTable.qrToken}`));
+      await bot.handleUpdate(callbackUpdate(qrGuest, 'set_lang_uz'));
+      await bot.handleUpdate(contactUpdate(qrGuest, '+998901234541'));
+      registeredIds.push(String(qrGuest.user.id));
+      await bot.handleUpdate(callbackUpdate(qrGuest, 'call_waiter'));
+      check(
+        'QR bilan kelganda ham stol so\'raldi',
+        lastScreen().text.includes('Qaysi stolda'),
+        firstLine(lastScreen().text)
+      );
     } finally {
       realtime.emitTo = realEmitTo;
     }
