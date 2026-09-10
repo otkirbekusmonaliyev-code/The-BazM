@@ -348,3 +348,455 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   BREND SAHIFASI (Pro tarif)
+   ============================================================ */
+
+.brand-lead {
+  color: var(--muted);
+  max-width: 640px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+/* Chapda tanlovlar, o'ngda jonli natija — odam bosgan zahoti ko'radi */
+.brand-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .brand-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.brand-block {
+  margin-bottom: 28px;
+}
+
+.brand-block h3 {
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.brand-hint {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 0 0 12px;
+  max-width: 460px;
+}
+
+/* ---------- Logotip ---------- */
+
+.brand-logo-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.brand-logo-preview {
+  width: 92px;
+  height: 92px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px dashed var(--border);
+  background: var(--card-2);
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.brand-logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ---------- Rang va fon tugmalari ---------- */
+
+.brand-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.brand-color {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px 7px 7px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.25s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-color:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.brand-color.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.brand-color b {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Ikki kvadrat — kunduzgi va tungi variant */
+.brand-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- Shriftlar ---------- */
+
+.brand-fonts {
+  display: grid;
+  gap: 8px;
+}
+
+.brand-font {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.25s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-font:hover:not(:disabled) {
+  transform: translateX(3px);
+}
+
+.brand-font.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.brand-font b {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.brand-font span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ---------- Jonli natija ---------- */
+
+.brand-preview-wrap {
+  position: sticky;
+  top: 16px;
+}
+
+.brand-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.brand-preview-bar span {
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand-preview {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.brand-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid;
+}
+
+.brand-preview-head img {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  object-fit: contain;
+}
+
+.brand-preview-head b {
+  display: block;
+  font-size: 16px;
+}
+
+.brand-preview-head span {
+  display: block;
+  font-size: 11.5px;
+  margin-top: 1px;
+}
+
+.brand-preview-pills {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+
+.brand-preview-pills span {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.brand-preview-dish {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid;
+}
+
+.brand-preview-plate {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+
+.brand-preview-btn {
+  width: 100%;
+  height: 42px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: default;
+}
+
+/* ============================================================
+   TO'LOV — ESLATMA VA SAHIFA
+   ============================================================ */
+
+/* Eslatma. Yopish tugmasi ATAYLAB yo'q: "keyin ko'raman" deb yopilgan
+   eslatma to'lovni kechiktirishning eng oson yo'li. */
+.bill-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  background: color-mix(in srgb, var(--gold) 11%, transparent);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.bill-banner.danger {
+  border-color: color-mix(in srgb, #d9534f 50%, transparent);
+  background: color-mix(in srgb, #d9534f 12%, transparent);
+}
+
+.bill-banner.stop {
+  border-color: color-mix(in srgb, #d9534f 70%, transparent);
+  background: color-mix(in srgb, #d9534f 18%, transparent);
+}
+
+.bill-banner-icon {
+  font-size: 20px;
+  flex: none;
+}
+
+.bill-banner-sum {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.bill-banner-part {
+  color: var(--muted);
+}
+
+/* ---------- Sahifa ---------- */
+
+.bill-alert {
+  padding: 13px 16px;
+  border-radius: 13px;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  border: 1px solid color-mix(in srgb, #d9534f 45%, transparent);
+  background: color-mix(in srgb, #d9534f 12%, transparent);
+}
+
+.bill-alert.stop {
+  border-color: color-mix(in srgb, #d9534f 70%, transparent);
+  background: color-mix(in srgb, #d9534f 18%, transparent);
+}
+
+.bill-card {
+  max-width: 520px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 22px;
+  background: var(--card-2);
+}
+
+.bill-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.bill-row:last-child {
+  border-bottom: 0;
+}
+
+.bill-row span:first-child {
+  flex: 0 0 150px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.bill-muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Qancha to'langani — qisman to'lov ko'rinib tursin */
+.bill-progress-block {
+  max-width: 520px;
+  margin-bottom: 24px;
+}
+
+.bill-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.bill-progress-fill {
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bill-progress-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 9px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.bill-progress-legend .owed b {
+  color: var(--gold);
+}
+
+.bill-note {
+  margin-top: 12px;
+  padding: 11px 14px;
+  border-radius: 11px;
+  border-left: 3px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 9%, transparent);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.bill-how {
+  max-width: 520px;
+  margin-bottom: 24px;
+}
+
+.bill-how h3,
+.bill-history h3 {
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.bill-how p {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text);
+  margin: 0 0 14px;
+}
+
+.bill-contact {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.bill-soon {
+  margin-top: 14px !important;
+  color: var(--muted) !important;
+  font-size: 12.5px !important;
+}
+
+.bill-payment {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  max-width: 520px;
+}
+
+.bill-payment b {
+  flex: 0 0 130px;
+  color: var(--gold);
+}
+
+.bill-payment span {
+  color: var(--muted);
+  font-size: 12.5px;
+}

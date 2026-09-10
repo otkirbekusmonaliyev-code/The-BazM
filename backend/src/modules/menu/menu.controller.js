@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const planLimits = require('../../services/planLimits');
 
 // ============ MIJOZ UCHUN (ochiq, public) ============
 // Barcha kategoriyalar va taomlarni qaytaradi (tugagan taomlar ham ko'rinadi,
@@ -106,6 +107,7 @@ const itemSchema = z.object({
 async function createItem(req, res, next) {
   try {
     const data = itemSchema.parse(req.body);
+    await planLimits.assertCanAddMenuItems(req.restaurantSlug, req.tenantDb, 1);
     const item = await req.tenantDb.menuItem.create({ data });
     res.status(201).json(item);
   } catch (err) {

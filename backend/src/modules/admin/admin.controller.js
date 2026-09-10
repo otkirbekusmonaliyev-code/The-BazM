@@ -3,6 +3,9 @@
 
 const { z } = require('zod');
 const masterPrisma = require('../../config/masterDb');
+const brand = require('../../utils/brand');
+const planLimits = require('../../services/planLimits');
+const billing = require('../../services/billing');
 const realtime = require('../../realtime/io');
 const { isTransitionAllowed, CLOSED_STATUSES } = require('../../utils/orderStatus');
 const { releaseTableIfIdle } = require('../../services/tables');
@@ -212,6 +215,10 @@ async function getRestaurantProfile(req, res, next) {
         name: true,
         slug: true,
         logoUrl: true,
+        brandColor: true,
+        brandSurface: true,
+        brandDisplayFont: true,
+        brandBodyFont: true,
         subscriptionPlan: true,
         subscriptionStatus: true,
         nextBillingDate: true,
@@ -221,10 +228,92 @@ async function getRestaurantProfile(req, res, next) {
     if (!restaurant) {
       return res.status(404).json({ error: 'Restoran topilmadi' });
     }
-    res.json(restaurant);
+    // Panel "Brend" bo'limini ko'rsatish-ko'rsatmaslikni shu bayroqqa
+    // qarab hal qiladi — tarif nomini o'zi tekshirib yurmaydi
+    res.json({
+      ...restaurant,
+      canBrand: planLimits.limitsOf(restaurant.subscriptionPlan).branding === true,
+    });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { getDashboard, listOrders, updateOrderStatus, getRestaurantProfile };
+// BREND SOZLAMALARI — logo va urg'u rangi.
+//
+// Rang ERKIN emas: faqat tayyor ro'yxatdagi kalitlar qabul qilinadi
+// (qarang: utils/brand.js). Erkin tanlovda och rang oq fonda o'qilmay
+// qoladi va mijoz o'z ilovasini buzib qo'yardi.
+const BRAND_KEYS = ['brandColor', 'brandSurface', 'brandDisplayFont', 'brandBodyFont'];
+
+const brandSchema = z.object({
+  logoUrl: z.string().max(500).nullable().optional(),
+  brandColor: z.string().max(40).nullable().optional(),
+  brandSurface: z.string().max(40).nullable().optional(),
+  brandDisplayFont: z.string().max(40).nullable().optional(),
+  brandBodyFont: z.string().max(40).nullable().optional(),
+});
+
+async function updateBranding(req, res, next) {
+  try {
+    const data = brandSchema.parse(req.body);
+    await planLimits.assertCanBrand(req.restaurantSlug);
+
+    const patch = {};
+    if (data.logoUrl !== undefined) patch.logoUrl = data.logoUrl || null;
+
+    // Har bir tanlov TEKSHIRILADI. Ro'yxatda yo'q kalit qabul qilinmaydi —
+    // aks holda bazaga ixtiyoriy qiymat tushib, ilova buzilardi.
+    for (const key of BRAND_KEYS) {
+      if (data[key] === undefined) continue;
+      if (data[key] && !brand.validators[key](data[key])) {
+        return res.status(400).json({ error: 'Bunday tanlov yo\'q' });
+      }
+      patch[key] = data[key] || null;
+    }
+
+    const restaurant = await masterPrisma.restaurant.update({
+      where: { slug: req.restaurantSlug },
+      data: patch,
+      select: { logoUrl: true, ...Object.fromEntries(BRAND_KEYS.map((k) => [k, true])) },
+    });
+
+    return res.json({ ...restaurant, brand: brand.themeOf(restaurant) });
+  } catch (err) {
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'Ma\'lumotlar noto\'g\'ri' });
+    }
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    return next(err);
+  }
+}
+
+// Tanlash mumkin bo'lgan hamma variant — panel shu ro'yxatlarni chizadi
+function listBrandOptions(req, res) {
+  res.json(brand.options());
+}
+
+// TO'LOV HOLATI.
+//
+// Panel banneri va to'lov sahifasi shu javobdan chiziladi. Yo'l ataylab
+// `/billing` bilan boshlanadi: `tenantResolver` aynan shu prefiksni
+// xizmat to'xtatilganda ham o'tkazadi.
+async function getBilling(req, res, next) {
+  try {
+    res.json(await billing.statusOf(req.restaurantSlug));
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    return next(err);
+  }
+  return undefined;
+}
+
+module.exports = {
+  getDashboard,
+  listOrders,
+  updateOrderStatus,
+  getRestaurantProfile,
+  updateBranding,
+  listBrandOptions,
+  getBilling,
+};

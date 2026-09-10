@@ -22,6 +22,11 @@ router.patch('/restaurants/:id/suspend', controller.suspendRestaurant);
 router.patch('/restaurants/:id/activate', controller.activateRestaurant);
 router.delete('/restaurants/:id', controller.deleteRestaurant);
 
+// To'lovlar. Hozircha qo'lda tasdiqlanadi; Payme/Click ulanganda ular ham
+// shu yerdagi mantiqni chaqiradi.
+router.get('/restaurants/:id/billing', controller.getRestaurantBilling);
+router.post('/restaurants/:id/payments', controller.recordPayment);
+
 router.get('/applications', controller.listApplications);
 router.post('/applications/:id/approve', controller.approveApplication);
 router.patch('/applications/:id/reject', controller.rejectApplication);

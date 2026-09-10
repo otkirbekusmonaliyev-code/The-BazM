@@ -10,6 +10,7 @@ const mailer = require('../../services/mailer');
 const { appUrl } = require('../../utils/links');
 const planLimits = require('../../services/planLimits');
 const applicationStatus = require('../../services/applicationStatus');
+const billing = require('../../services/billing');
 
 const loginSchema = z.object({
   phone: z.string().min(9),
@@ -358,6 +359,84 @@ async function approveApplication(req, res, next) {
   }
 }
 
+// ============================================================
+//  TO'LOVLAR
+// ============================================================
+//
+// Hozircha to'lov QO'LDA tasdiqlanadi: muassasa karta orqali o'tkazadi,
+// platforma egasi shu yerda "tushdi" deb belgilaydi. Payme yoki Click
+// ulanganda ular ham xuddi shu `applyPayment` ni chaqiradi — qolgan
+// mantiq o'zgarmaydi.
+
+async function getRestaurantBilling(req, res, next) {
+  try {
+    const restaurant = await masterPrisma.restaurant.findUnique({
+      where: { id: req.params.id },
+      select: { slug: true },
+    });
+    if (!restaurant) return res.status(404).json({ error: 'Restoran topilmadi' });
+
+    const [status, history] = await Promise.all([
+      billing.statusOf(restaurant.slug),
+      masterPrisma.billingRecord.findMany({
+        where: { restaurantId: req.params.id },
+        orderBy: { createdAt: 'desc' },
+        take: 24,
+        include: { payments: { orderBy: { createdAt: 'desc' } } },
+      }),
+    ]);
+    return res.json({ ...status, history });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    return next(err);
+  }
+}
+
+const paymentSchema = z.object({
+  amount: z.number().positive(),
+  reference: z.string().max(120).optional(),
+  note: z.string().max(300).optional(),
+});
+
+async function recordPayment(req, res, next) {
+  try {
+    const data = paymentSchema.parse(req.body);
+
+    const restaurant = await masterPrisma.restaurant.findUnique({
+      where: { id: req.params.id },
+      select: { slug: true },
+    });
+    if (!restaurant) return res.status(404).json({ error: 'Restoran topilmadi' });
+
+    // Hisob hali ochilmagan bo'lishi mumkin (muddat uzoq) — oldindan
+    // to'lamoqchi bo'lgan odamni to'xtatmaymiz
+    const status = await billing.statusOf(restaurant.slug);
+    if (!status.invoice) {
+      return res.status(409).json({
+        error: 'Hozircha ochiq hisob yo\'q — to\'lov muddati hali kelmagan.',
+      });
+    }
+
+    const result = await billing.applyPayment(status.invoice.id, data.amount, {
+      method: 'manual',
+      reference: data.reference,
+      note: data.note,
+    });
+
+    return res.json({
+      closed: result.closed,
+      remaining: result.remaining,
+      status: await billing.statusOf(restaurant.slug),
+    });
+  } catch (err) {
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'Summa noto\'g\'ri' });
+    }
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    return next(err);
+  }
+}
+
 async function rejectApplication(req, res, next) {
   try {
     // Sabab ixtiyoriy, lekin yozilsa — ariza egasi uni saytdan ko'radi.
@@ -388,4 +467,6 @@ module.exports = {
   listApplications,
   approveApplication,
   rejectApplication,
+  getRestaurantBilling,
+  recordPayment,
 };

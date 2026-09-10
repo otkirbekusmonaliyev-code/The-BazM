@@ -87,7 +87,10 @@ function getClientForRestaurant(restaurant) {
   return client;
 }
 
-async function getTenantClient(restaurantSlug) {
+// `allowSuspended` — TO'LOV SAHIFASI uchun. Xizmat to'xtatilganda ham
+// muassasa qarzini ko'ra olishi va to'lay olishi kerak: aks holda odam
+// to'lash uchun ham kira olmay qolardi va bu boshi berk ko'cha bo'lardi.
+async function getTenantClient(restaurantSlug, { allowSuspended = false } = {}) {
   const cached = touch(restaurantSlug);
   if (cached) return cached;
 
@@ -101,7 +104,7 @@ async function getTenantClient(restaurantSlug) {
     throw err;
   }
 
-  if (restaurant.subscriptionStatus === 'suspended') {
+  if (restaurant.subscriptionStatus === 'suspended' && !allowSuspended) {
     const err = new Error('Obuna muddati tugagan. Xizmat vaqtincha to\'xtatilgan.');
     err.statusCode = 403;
     err.code = 'SUBSCRIPTION_SUSPENDED';

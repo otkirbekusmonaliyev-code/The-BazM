@@ -4,6 +4,7 @@ const app = require('./app');
 const { initSocket } = require('./realtime/io');
 const { startTableReleaseJob, stopTableReleaseJob } = require('./jobs/tableReleaseJob');
 const { startSelfTestJob, stopSelfTestJob } = require('./jobs/selfTestJob');
+const { startBillingJob, stopBillingJob } = require('./jobs/billingJob');
 const { startBots, stopBots } = require('./bot/botManager');
 
 const PORT = process.env.PORT || 4000;
@@ -25,6 +26,7 @@ server.listen(PORT, async () => {
   console.log(`   Health check: http://localhost:${PORT}/api/health`);
   startTableReleaseJob();
   startSelfTestJob();
+  startBillingJob();
   await startBots();
   console.log('');
 });
@@ -33,6 +35,7 @@ function shutdown(signal) {
   console.log(`\n${signal} — server to'xtatilmoqda...`);
   stopTableReleaseJob();
   stopSelfTestJob();
+  stopBillingJob();
   stopBots(signal);
   server.close(() => process.exit(0));
   // 5 soniyada yopilmasa — majburan chiqamiz

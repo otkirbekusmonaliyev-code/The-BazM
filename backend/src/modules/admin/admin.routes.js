@@ -11,4 +11,11 @@ router.get('/dashboard', adminOnly, controller.getDashboard);
 router.get('/orders', adminOnly, controller.listOrders);
 router.patch('/orders/:id/status', adminOnly, controller.updateOrderStatus);
 
+// Brend — logo va urg'u rangi (Pro tarifda)
+router.get('/brand-options', adminOnly, controller.listBrandOptions);
+router.patch('/branding', adminOnly, controller.updateBranding);
+
+// To'lov — xizmat TO'XTATILGANDA HAM ochiq (qarzni ko'rish va to'lash uchun)
+router.get('/billing', adminOnly, controller.getBilling);
+
 module.exports = router;

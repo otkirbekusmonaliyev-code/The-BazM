@@ -10,6 +10,7 @@ import MenuScreen from './MenuScreen';
 import CartScreen from './CartScreen';
 import TrackScreen from './TrackScreen';
 import DemoBanner from './DemoBanner';
+import useBrand from './useBrand';
 import { DEMO_MENU, DEMO_PLACE, DEMO_FLOW } from './demoData';
 
 // Mijoz ilovasi (Telegram Mini App).
@@ -47,6 +48,13 @@ export default function ClientApp({ mode }) {
   // Ekran tanlovi bir marta — birinchi yuklashda — qilinadi
   const initialRouteDone = useRef(false);
   const toast = useToast();
+
+  // Pro tarifdagi muassasa o'z rangini tanlagan bo'lsa — ilova shu rangda
+  // ochiladi. Namunada brend yo'q, standart oltin qoladi.
+  //
+  // Ref aynan `.app-client` elementiga ulanadi: rang o'zgaruvchisi shu
+  // yerda e'lon qilingan, `:root` ga yozish ish bermaydi.
+  const brandRef = useBrand(place && place.brand);
 
   const clearSession = useCallback(() => {
     clientAuth.clear(slug);
@@ -295,7 +303,7 @@ export default function ClientApp({ mode }) {
 
   if (fatalError) {
     return (
-      <div className="app-client">
+      <div className="app-client" ref={brandRef}>
         <div className="c-screen" style={{ justifyContent: 'center' }}>
           <div className="c-error-box">{fatalError}</div>
         </div>
@@ -306,7 +314,7 @@ export default function ClientApp({ mode }) {
   const animClass = direction === 'right' ? 'enter-right' : 'enter-left';
 
   return (
-    <div className="app-client">
+    <div className="app-client" ref={brandRef}>
       {(!session || screen === 'welcome') && (
         <WelcomeScreen
           mode={mode}

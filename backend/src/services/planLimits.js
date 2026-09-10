@@ -23,18 +23,23 @@ const masterPrisma = require('../config/masterDb');
 
 // null = cheksiz.
 //
-// Stol chegaralari (10 / 40 / cheksiz) — sayt boshidan beri shu raqamlarni
-// aytib kelgan, endi ular haqiqatan ham ishlaydi.
+// TARIFLAR HAJM BO'YICHA AJRATILADI, funksiya bo'yicha emas.
 //
-// Xodim chegaralari ataylab KENG olingan. Pro tarifda "cheksiz stol va
-// xodim" deb yozilgani uchun quyi tariflarda ham qandaydir chegara bo'lishi
-// mantiqan kerak, lekin u haqiqiy ishga xalaqit bermasligi shart: 10 stolli
-// kafeda admin + 2 oshpaz + 4 ofitsiant — bu oddiy holat, chegaraga hatto
-// yaqin ham kelmasligi kerak.
+// Sabab: QR menyu, Telegram bot, oshxona ekrani, ofitsiantlar boshqaruvi,
+// bron — bularning hammasi mahsulotning O'ZAGI. Ularni Basic'dan olib
+// tashlash arzon tarifni "kesilgan" qilib qo'yardi va mijoz mahsulotni
+// yomon holatda ko'rardi. Kichik kafe ham, katta restoran ham bir xil
+// tizimni oladi — faqat hajmi boshqacha.
+//
+// Yagona istisno — BREND (logo va rang). U ishga ta'sir qilmaydi, ya'ni
+// uni yuqori tarifga qoldirish hech kimning ishini buzmaydi.
+//
+// Xodim chegaralari ataylab keng: 10 stolli kafeda admin + 2 oshpaz +
+// 4 ofitsiant — oddiy holat, chegaraga yaqin ham kelmasligi kerak.
 const PLAN_LIMITS = {
-  basic: { maxTables: 10, maxStaff: 10 },
-  standard: { maxTables: 40, maxStaff: 30 },
-  pro: { maxTables: null, maxStaff: null },
+  basic: { maxTables: 10, maxStaff: 8, maxMenuItems: 60, branding: false },
+  standard: { maxTables: 40, maxStaff: 25, maxMenuItems: 250, branding: false },
+  pro: { maxTables: null, maxStaff: null, maxMenuItems: null, branding: true },
 };
 
 const PLAN_NAMES = { basic: 'Basic', standard: 'Standard', pro: 'Pro' };
@@ -121,6 +126,36 @@ async function assertCanAddStaff(slug, tenantDb, adding = 1) {
   );
 }
 
+/**
+ * Menyuga yangi taom qo'shish mumkinmi?
+ */
+async function assertCanAddMenuItems(slug, tenantDb, adding = 1) {
+  const plan = await planOf(slug);
+  const { maxMenuItems } = limitsOf(plan);
+  if (maxMenuItems === null) return;
+
+  const current = await tenantDb.menuItem.count();
+  if (current + adding <= maxMenuItems) return;
+
+  throw limitError(
+    `${PLAN_NAMES[plan]} tarifida ${maxMenuItems} tagacha taom bo'ladi `
+    + `(hozir ${current} ta). Ko'proq kerak bo'lsa tarifni ko'taring.`
+  );
+}
+
+// Brend (logo va rang) shu tarifda mumkinmi?
+async function canBrand(slug) {
+  return limitsOf(await planOf(slug)).branding === true;
+}
+
+async function assertCanBrand(slug) {
+  if (await canBrand(slug)) return;
+  const plan = await planOf(slug);
+  throw limitError(
+    `Logo va rangni tanlash Pro tarifida mumkin. Hozirgi tarifingiz — ${PLAN_NAMES[plan]}.`
+  );
+}
+
 module.exports = {
   PLAN_LIMITS,
   PLAN_NAMES,
@@ -129,4 +164,7 @@ module.exports = {
   invalidate,
   assertCanAddTables,
   assertCanAddStaff,
+  assertCanAddMenuItems,
+  canBrand,
+  assertCanBrand,
 };

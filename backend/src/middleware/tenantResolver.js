@@ -25,7 +25,14 @@ async function tenantResolver(req, res, next) {
     }
 
     req.restaurantSlug = slug;
-    req.tenantDb = await getTenantClient(slug);
+
+    // TO'LOV YO'LLARI TO'XTATILGANDA HAM OCHIQ.
+    //
+    // Aks holda qarzi bor muassasa to'lash uchun ham kira olmasdi va bu
+    // boshi berk ko'cha bo'lardi: xizmat yopiq, chunki to'lanmagan;
+    // to'lab bo'lmaydi, chunki xizmat yopiq.
+    const billingPath = req.path.startsWith('/billing');
+    req.tenantDb = await getTenantClient(slug, { allowSuspended: billingPath });
     next();
   } catch (err) {
     if (err.code === 'SUBSCRIPTION_SUSPENDED') {

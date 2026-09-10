@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Bazm">
+  <title>Bazm — dasturxon atrofidagi bo'sh joy</title>
+  <!--
+    2-VARIANT: DASTURXON.
+    "Bazm" — bu taom emas, YIG'ILISH. Belgi shuni aytadi: o'rtada dumaloq
+    dasturxon, atrofida odamlar.
+    Eng muhim tafsilot — pastdagi BO'SH JOY (uzuq chiziqli doira). U
+    ataylab qoldirilgan: qaragan odamning o'z o'rni. Mehmondo'stlik
+    mahsuloti uchun bundan to'g'ri ma'no yo'q va bu belgini boshqa
+    "aylana-nuqta" logotiplaridan ajratib turadi.
+    Olti o'rindan beshtasi band — shuning uchun bo'shlig'i darhol ko'zga
+    tashlanadi, oddiy beshburchak esa shunchaki shakl bo'lib qolardi.
+  -->
+  <defs>
+    <linearGradient id="l2" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#e0c288"/>
+      <stop offset="1" stop-color="#a97f3c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dasturxon -->
+  <circle cx="60" cy="60" r="24" fill="none" stroke="url(#l2)" stroke-width="3"/>
+  <circle cx="60" cy="60" r="9" fill="url(#l2)" opacity="0.28"/>
+
+  <!-- Band o'rinlar -->
+  <g fill="url(#l2)">
+    <circle cx="60"    cy="14" r="8.5"/>
+    <circle cx="99.84" cy="37" r="8.5"/>
+    <circle cx="99.84" cy="83" r="8.5"/>
+    <circle cx="20.16" cy="83" r="8.5"/>
+    <circle cx="20.16" cy="37" r="8.5"/>
+  </g>
+
+  <!-- Sizning o'rningiz -->
+  <circle cx="60" cy="106" r="8.5" fill="none" stroke="url(#l2)" stroke-width="2"
+          opacity="0.55" stroke-dasharray="4.2 3.6" stroke-linecap="round"/>
+</svg>

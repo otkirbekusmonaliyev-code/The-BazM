@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Bazm">
+  <title>Bazm — QR va likobcha</title>
+  <!--
+    3-VARIANT: QR.
+    Mahsulotning eng ko'rinadigan qismi — stoldagi QR kod. Mijoz Bazm
+    bilan aynan shu orqali tanishadi.
+    Belgi QR kodning burchak "ko'zi"ni oladi (uni har kim taniydi) va
+    ichiga likobcha qo'yadi — ya'ni "skanerlang, taom chiqadi".
+    Burchaklar yumaloq: QR kodning qattiq geometriyasi iliq mahsulotga
+    mos kelishi uchun.
+  -->
+  <defs>
+    <linearGradient id="l3" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#e0c288"/>
+      <stop offset="1" stop-color="#a97f3c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- QR "ko'zi" — tashqi ramka -->
+  <rect x="12" y="12" width="96" height="96" rx="26" ry="26"
+        fill="none" stroke="url(#l3)" stroke-width="8"/>
+
+  <!-- Ichida — likobcha -->
+  <circle cx="60" cy="60" r="26" fill="url(#l3)"/>
+  <circle cx="60" cy="60" r="16" fill="none" stroke="#12160f" stroke-width="2.4" opacity="0.45"/>
+
+  <!-- Skanerlash chizig'i: QR o'qilayotgani -->
+  <rect x="26" y="57" width="68" height="6" rx="3" fill="#12160f" opacity="0.9"/>
+</svg>

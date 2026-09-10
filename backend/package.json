@@ -20,10 +20,11 @@
     "test:full": "node scripts/fullTest.js",
     "test:mail": "node scripts/mailTest.js",
     "test:self": "node scripts/selfTestOnce.js",
-    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js && node scripts/mailTest.js && node scripts/statusTest.js",
+    "test": "node scripts/smokeTest.js && node scripts/smokeTest2.js && node scripts/botTest.js && node scripts/mailTest.js && node scripts/statusTest.js && node scripts/billingTest.js",
     "set-password": "node scripts/setPassword.js",
     "reset": "node scripts/resetPlatform.js",
-    "test:status": "node scripts/statusTest.js"
+    "test:status": "node scripts/statusTest.js",
+    "test:billing": "node scripts/billingTest.js"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",

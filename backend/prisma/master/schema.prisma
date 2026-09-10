@@ -96,7 +96,17 @@ model Restaurant {
   subscriptionPlan   SubscriptionPlan   @default(basic)
   subscriptionStatus SubscriptionStatus @default(trial)
   monthlyFee         Decimal            @default(0)
-  nextBillingDate    DateTime?
+
+  // BREND — Pro tarifda muassasa o'z rangini tanlaydi.
+  // Rang ERKIN emas, tayyor ro'yxatdan (`utils/brand.js`): erkin tanlovda
+  // och rang oq fonda o'qilmay qoladi va mijoz o'z ilovasini buzib qo'yadi.
+  brandColor       String?
+  brandSurface     String?
+  brandDisplayFont String?
+  brandBodyFont    String?
+  nextBillingDate  DateTime?
+  // Ortiqcha to'langan pul yo'qolmaydi — keyingi hisobga o'tadi
+  creditBalance    Decimal   @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -104,15 +114,51 @@ model Restaurant {
   billingHistory BillingRecord[]
 }
 
+// OYLIK HISOB.
+//
+// Har oy muassasaga bitta hisob ochiladi. To'lov QISMAN kelishi mumkin:
+// 300 000 lik hisobga 100 000 tushsa, hisob YOPILMAYDI — qolgan 200 000
+// qarz bo'lib turadi va tizim to'lovni so'rayveradi. Pul yo'qolmaydi,
+// u `paidAmount` da turadi va ko'rinib turadi.
+//
+// Hisob to'liq yopilgandagina xizmat yana bir oyga ochiladi.
 model BillingRecord {
   id            String     @id @default(uuid())
   restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
   restaurantId  String
   amount        Decimal
-  status        String // paid, failed, pending
+  paidAmount    Decimal    @default(0)
+  status        String     @default("pending") // pending | paid | cancelled
   invoiceNumber String
+  periodStart   DateTime?
+  periodEnd     DateTime?
+  dueDate       DateTime?
   paidAt        DateTime?
   createdAt     DateTime   @default(now())
+
+  payments BillingPayment[]
+
+  @@index([restaurantId, status])
+}
+
+// BITTA TO'LOV.
+//
+// Hisobga tushgan har bir pul alohida yozuv — jami summa emas. Sabab:
+// "kim, qachon, qancha to'lagan" degan savolga javob kerak bo'ladi va
+// qisman to'lovlar ketma-ketligi ko'rinib turishi shart.
+model BillingPayment {
+  id        String        @id @default(uuid())
+  invoice   BillingRecord @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId String
+  amount    Decimal
+  // manual — super admin qo'lda tasdiqladi (karta o'tkazmasi va h.k.).
+  // Keyinchalik shu yerga payme | click qo'shiladi.
+  method    String        @default("manual")
+  reference String?
+  note      String?
+  createdAt DateTime      @default(now())
+
+  @@index([invoiceId])
 }
 
 // Yagona login uchun global telefon indeksi.

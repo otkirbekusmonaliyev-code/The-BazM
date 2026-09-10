@@ -10,6 +10,9 @@ import TablesPage from './TablesPage';
 import StaffPage from './StaffPage';
 import ReservationsPage from './ReservationsPage';
 import OrdersPage from './OrdersPage';
+import BrandPage from './BrandPage';
+import BillingPage from './BillingPage';
+import BillingBanner from './BillingBanner';
 
 export default function AdminApp() {
   const { slug } = useParams();
@@ -25,6 +28,7 @@ export default function AdminApp() {
   const [session, setSession] = useState(() => staffAuth.getFor(slug, ['admin']));
   const [restaurant, setRestaurant] = useState(null);
   const [pendingReservations, setPendingReservations] = useState(0);
+  const [billing, setBilling] = useState(null);
   // Yangi buyurtma/bron hodisalari sahifalarga shu hisoblagich orqali uzatiladi:
   // qiymati o'zgarganda tegishli sahifa ro'yxatini qayta yuklaydi
   const [liveTick, setLiveTick] = useState(0);
@@ -91,6 +95,17 @@ export default function AdminApp() {
     api.get('/admin/restaurant').then(setRestaurant).catch(() => {});
   }, [api, session]);
 
+  // TO'LOV ESLATMASI har kirishda tekshiriladi — "har kuni loyihaga
+  // kirilganda eslatilsin" degani aynan shu. Xizmat to'xtatilgan bo'lsa
+  // ham bu so'rov o'tadi (server `/billing` yo'lini alohida o'tkazadi).
+  const loadBilling = useCallback(() => {
+    api.get('/admin/billing').then(setBilling).catch(() => {});
+  }, [api]);
+
+  useEffect(() => {
+    if (session) loadBilling();
+  }, [session, loadBilling]);
+
   // Yon paneldagi bron belgisi. Hisob SERVERDAN olinadi — avval u faqat
   // socket hodisalaridan o'sardi va sahifa ochilganda doim 0 ko'rinardi.
   useEffect(() => {
@@ -153,6 +168,13 @@ export default function AdminApp() {
           <NavLink to={`${base}/staff`} className={({ isActive }) => `dl-nav-link${isActive ? ' active' : ''}`}>
             <span>👥</span> Xodimlar
           </NavLink>
+          <NavLink to={`${base}/brand`} className={({ isActive }) => `dl-nav-link${isActive ? ' active' : ''}`}>
+            <span>🎨</span> Brend
+          </NavLink>
+          <NavLink to={`${base}/billing`} className={({ isActive }) => `dl-nav-link${isActive ? ' active' : ''}`}>
+            <span>💳</span> To'lov
+            {billing && billing.state !== 'ok' && <span className="dl-nav-badge">!</span>}
+          </NavLink>
 
           <div className="dl-side-foot">
             <div style={{ fontWeight: 600, color: 'var(--text)' }}>{session.user.fullName}</div>
@@ -179,12 +201,24 @@ export default function AdminApp() {
           </header>
 
           <div className="dl-content">
+            <BillingBanner billing={billing} base={base} />
             <Routes>
               <Route path="/" element={<DashboardPage api={api} liveTick={liveTick} />} />
               <Route path="orders" element={<OrdersPage api={api} liveTick={liveTick} />} />
               <Route path="menu" element={<MenuPage api={api} />} />
               <Route path="tables" element={<TablesPage api={api} slug={slug} liveTick={liveTick} />} />
               <Route path="reservations" element={<ReservationsPage api={api} liveTick={liveTick} />} />
+              <Route path="billing" element={<BillingPage billing={billing} />} />
+              <Route
+                path="brand"
+                element={
+                  <BrandPage
+                    api={api}
+                    restaurant={restaurant}
+                    onSaved={() => api.get('/admin/restaurant').then(setRestaurant).catch(() => {})}
+                  />
+                }
+              />
               <Route path="staff" element={<StaffPage api={api} />} />
             </Routes>
           </div>

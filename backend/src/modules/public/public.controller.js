@@ -118,21 +118,37 @@ async function publicStats(req, res, next) {
   }
 }
 
-// TARIFLAR.
+// TARIFLAR — SAYTDAGI "STANDARTLAR".
 //
-// Bu ro'yxat saytdagi "standart"lar — ya'ni qaysi tarifda nima ishlaydi.
-// Ikki narsa muhim:
+// Ikki qoida bu ro'yxatni boshqaradi:
 //
-//   1) STOL VA XODIM CHEGARALARI SHU YERDAN OLINADI (`planLimits`). Avval
-//      sayt "10 tagacha stol" deb yozardi, lekin kodda hech qanday chegara
-//      yo'q edi — ya'ni sayt bir narsani, tizim boshqa narsani aytardi.
-//      Endi raqam bitta joyda turadi va ikkalasi ham o'shani o'qiydi.
+//   1) YO'Q NARSA VA'DA QILINMAYDI. Avval bu yerda "bir nechta filial",
+//      "o'z brendingiz", "kengaytirilgan hisobotlar" va "1 ta oshxona
+//      ekrani" yozilgandi — to'rttasi ham kodda mavjud emas edi. Bunday
+//      ro'yxat sotuvda yordam bermaydi, faqat birinchi savolda uyat
+//      keltiradi. Endi faqat HAQIQATAN ishlaydigan narsalar yoziladi.
 //
-//   2) RO'YXAT LOYIHA BILAN BIRGA YANGILANADI. Mini App, aniq ofitsiantni
-//      chaqirish, jonli oshxona ekrani, QR kodni yuklab olish — bularning
-//      hammasi allaqachon ishlaydi, lekin saytda yozilmagandi.
+//   2) AJRATISH HAJM BO'YICHA. QR menyu, bot, oshxona ekrani,
+//      ofitsiantlar, bron — hammasi hamma tarifda. Kichik kafe ham to'liq
+//      mahsulotni oladi, faqat kichik hajmda. Chegaralar `planLimits` dan
+//      olinadi, ya'ni sayt va backend bir xil raqamni aytadi.
 function listPlans(req, res) {
   const lim = planLimits.PLAN_LIMITS;
+
+  // Uchala tarifda ham bor — mahsulotning o'zagi
+  const core = [
+    'QR menyu — kamera bilan ochiladi, ilova shart emas',
+    'Telegram bot va Mini App',
+    'Oshxona ekrani — buyurtmalar jonli tushadi',
+    'Ofitsiantlar boshqaruvi va chaqiruv',
+    'Stol bron qilish',
+    'Har bir stol uchun QR kod (PNG va SVG, chop etishga tayyor)',
+  ];
+
+  const volume = (l) =>
+    `${l.maxTables ? `${l.maxTables} tagacha stol` : 'Cheksiz stol'} · `
+    + `${l.maxStaff ? `${l.maxStaff} tagacha xodim` : 'cheksiz xodim'} · `
+    + `${l.maxMenuItems ? `${l.maxMenuItems} tagacha taom` : 'cheksiz taom'}`;
 
   res.json([
     {
@@ -141,11 +157,9 @@ function listPlans(req, res) {
       price: PLAN_PRICES.basic,
       limits: lim.basic,
       features: [
-        `${lim.basic.maxTables} tagacha stol · ${lim.basic.maxStaff} tagacha xodim`,
-        'QR menyu — kamera bilan ochiladi, ilova shart emas',
-        'Telegram bot va Mini App',
-        'Oshxona ekrani — buyurtmalar jonli tushadi',
-        'Har bir stol uchun QR kod (PNG va SVG, chop etishga tayyor)',
+        volume(lim.basic),
+        ...core,
+        'Kunlik va 7 kunlik savdo hisoboti',
         'Email orqali qo\'llab-quvvatlash',
       ],
     },
@@ -156,12 +170,10 @@ function listPlans(req, res) {
       popular: true,
       limits: lim.standard,
       features: [
-        `${lim.standard.maxTables} tagacha stol · ${lim.standard.maxStaff} tagacha xodim`,
-        'Basic’dagi hammasi',
-        'Ofitsiantlar boshqaruvi — buyurtma aniq odamga topshiriladi',
-        'Botdan ofitsiant chaqirish — mijoz kimni chaqirishni o‘zi tanlaydi',
-        'Oldindan stol bron qilish',
-        'Kunlik savdo hisoboti va 7 kunlik grafik',
+        volume(lim.standard),
+        'Basic\u2019dagi hamma imkoniyat',
+        'Eng ko\'p buyurtma qilingan taomlar tahlili',
+        'O\'rnatishda yordam — stollarga QR, xodimlarni o\'rgatish',
         'Telefon orqali qo\'llab-quvvatlash',
       ],
     },
@@ -171,11 +183,9 @@ function listPlans(req, res) {
       price: PLAN_PRICES.pro,
       limits: lim.pro,
       features: [
-        'Cheksiz stol va xodim',
-        'Standard’dagi hammasi',
-        'Bir nechta filial',
-        'O\'z brendingiz va rangingiz',
-        'Kengaytirilgan hisobotlar',
+        volume(lim.pro),
+        'Standard\u2019dagi hamma imkoniyat',
+        'O\'z logotipingiz va rangingiz — mijoz ilovasi sizning brendingizda',
         'Shaxsiy menejer',
         '24/7 qo\'llab-quvvatlash',
       ],

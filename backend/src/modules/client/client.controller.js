@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const masterPrisma = require('../../config/masterDb');
+const brand = require('../../utils/brand');
+const planLimits = require('../../services/planLimits');
 const realtime = require('../../realtime/io');
 const { releaseTableIfIdle } = require('../../services/tables');
 
@@ -72,10 +74,31 @@ async function getPlace(req, res, next) {
   try {
     const place = await masterPrisma.restaurant.findUnique({
       where: { slug: req.restaurantSlug },
-      select: { slug: true, name: true, businessType: true, logoUrl: true },
+      select: {
+        slug: true,
+        name: true,
+        businessType: true,
+        logoUrl: true,
+        brandColor: true,
+        brandSurface: true,
+        brandDisplayFont: true,
+        brandBodyFont: true,
+        subscriptionPlan: true,
+      },
     });
     if (!place) return res.status(404).json({ error: 'Muassasa topilmadi' });
-    return res.json(place);
+
+    // BREND FAQAT PRO TARIFDA. Tekshiruv aynan SHU YERDA turishi muhim:
+    // muassasa Pro'dan tushib qolsa, ilova o'z-o'zidan standart ko'rinishga
+    // qaytadi — bazadagi eski qiymat "yopishib" qolmaydi.
+    const branded = planLimits.limitsOf(place.subscriptionPlan).branding === true;
+    return res.json({
+      slug: place.slug,
+      name: place.name,
+      businessType: place.businessType,
+      logoUrl: branded ? place.logoUrl : null,
+      brand: brand.themeOf(branded ? place : {}),
+    });
   } catch (err) {
     return next(err);
   }
