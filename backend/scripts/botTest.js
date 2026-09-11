@@ -11,7 +11,8 @@
 require('dotenv').config();
 const { requireTenant } = require('./lib/requireTenant');
 const { Telegram } = require('telegraf');
-const { createRestaurantBot } = require('../src/bot/restaurantBot');
+const { createPlatformBot } = require('../src/bot/restaurantBot');
+const masterPrisma = require('../src/config/masterDb');
 const { getTenantClient } = require('../src/config/tenantDb');
 
 const SLUG = process.env.TELEGRAM_DEV_SLUG || 'delish';
@@ -50,7 +51,8 @@ function newUser() {
 
 function makeBot() {
   sink = [];
-  const bot = createRestaurantBot({ token: '1:FAKE', slug: SLUG, name: 'Delish' });
+  // Bitta bot butun platformaga — muassasa suhbat ichida tanlanadi
+  const bot = createPlatformBot({ token: '1:FAKE' });
   // Telegraf getMe chaqirmasligi uchun bot ma'lumotini oldindan beramiz
   bot.botInfo = { id: 1, is_bot: true, first_name: 'Test', username: 'test_bot' };
   return bot;
@@ -131,6 +133,29 @@ async function register(bot, who, phone) {
   await bot.handleUpdate(callbackUpdate(who, 'set_lang_uz'));
   await bot.handleUpdate(contactUpdate(who, phone || `+99890${String(who.user.id).slice(-7)}`));
   registeredIds.push(String(who.user.id));
+  await pickPlace(bot, who);
+}
+
+// JOY TANLASH: viloyat -> (shahar) -> tur -> muassasa.
+//
+// Sinov muassasasi (delish) Toshkent shahrida — u yerda shahar qadami
+// O'TKAZIB YUBORILADI, shuning uchun viloyatdan keyin darhol tur keladi.
+async function pickPlace(bot, who, placeName = 'Delish') {
+  const regions = lastScreen();
+  const region = regions.buttons.find(
+    (x) => x.data && x.data.startsWith('pl_r_') && x.text.includes('Toshkent shahri')
+  );
+  if (!region) throw new Error('Toshkent shahri tugmasi topilmadi: ' + regions.text);
+  await bot.handleUpdate(callbackUpdate(who, region.data));
+
+  await bot.handleUpdate(callbackUpdate(who, 'pl_t_restaurant'));
+
+  const list = lastScreen();
+  const place = list.buttons.find(
+    (x) => x.data && x.data.startsWith('pl_p_') && x.text.includes(placeName)
+  );
+  if (!place) throw new Error('Muassasa topilmadi: ' + list.text);
+  await bot.handleUpdate(callbackUpdate(who, place.data));
 }
 
 async function main() {
@@ -234,12 +259,25 @@ async function main() {
     check('ro\'yxat to\'liq (3 ta imkoniyat)', ['Menyuni ochib', 'Ofitsiantni chaqirish', 'bron qilish'].every((x) => congrats.payload.text.includes(x)));
     check('kontakt klaviaturasi olib tashlandi', !!(congrats.payload.reply_markup || {}).remove_keyboard);
 
+    // Ro'yxatdan o'tgach endi JOY so'raladi — bitta bot o'nlab
+    // muassasaga xizmat qiladi, qaysi biri ekanini bilish shart
+    const picker = lastScreen();
+    check('joy tanlash taklif qilindi', picker.text.includes('Viloyatni tanlang'), firstLine(picker.text));
+    check(
+      'faqat muassasasi BOR viloyatlar',
+      picker.buttons.filter((x) => x.data && x.data.startsWith('pl_r_')).length > 0
+        && picker.buttons.every((x) => !x.text.includes('Xorazm')),
+      picker.buttons.map((x) => x.text).join(', ')
+    );
+
+    await pickPlace(bot, me);
     const home = lastScreen();
-    check('bosh menyu ochildi', !!btn(home, 'call_waiter') && !!btn(home, 'reserve'));
+    check('muassasa tanlangach bosh menyu', !!btn(home, 'call_waiter') && !!btn(home, 'reserve'));
     check('ilovani ochish tugmasi bor', !!btn(home, 'open_app'));
+    check('joyni almashtirish tugmasi bor', !!btn(home, 'place_start'));
     check('til tugmasi bor', !!btn(home, 'lang'));
 
-    const saved = await db.telegramCustomer.findUnique({ where: { telegramId: String(me.user.id) } });
+    const saved = await masterPrisma.telegramCustomer.findUnique({ where: { telegramId: String(me.user.id) } });
     check('mijoz bazaga yozildi', !!saved, saved && saved.phone);
     check('raqam to\'g\'ri saqlandi', !!saved && saved.phone === '+998901234500');
 
@@ -250,8 +288,96 @@ async function main() {
     check('ism bilan kutib olindi', again.text.includes('Xush kelibsiz'));
   }
 
-  // ---------- 5) Ruscha ----------
-  console.log('\n5) Til almashtirish (ruscha)');
+  // ---------- 5) Joy tanlash ----------
+  //
+  // Bitta bot butun platformaga xizmat qiladi, shuning uchun eng muhim
+  // savol: mijoz o'z muassasasini topa oladimi va FAQAT mavjudlari
+  // ko'rsatiladimi?
+  console.log('\n5) Joy tanlash: viloyat -> shahar -> tur -> muassasa');
+  {
+    const guest = newUser();
+    await bot.handleUpdate(textUpdate(guest, '/start'));
+    await bot.handleUpdate(callbackUpdate(guest, 'set_lang_uz'));
+    await bot.handleUpdate(contactUpdate(guest, '+998901234560'));
+    registeredIds.push(String(guest.user.id));
+
+    // --- Viloyatlar ---
+    const regions = lastScreen();
+    check('viloyatlar ro\'yxati chiqdi', regions.text.includes('Viloyatni tanlang'), firstLine(regions.text));
+    const regionBtns = regions.buttons.filter((x) => x.data && x.data.startsWith('pl_r_'));
+    check('viloyat tugmalari bor', regionBtns.length > 0, `${regionBtns.length} ta`);
+    check(
+      'FAQAT muassasasi bor viloyatlar',
+      regionBtns.length < 14,
+      `${regionBtns.length} ta (jami 14 tadan)`
+    );
+    check(
+      'muassasasi yo\'q viloyat ko\'rinmadi',
+      !regionBtns.some((x) => /Xorazm|Navoiy|Jizzax/.test(x.text)),
+      regionBtns.map((x) => x.text).join(', ')
+    );
+
+    // --- Toshkent SHAHRI: shahar qadami o'tkazib yuboriladi ---
+    const tosh = regionBtns.find((x) => x.text.includes('Toshkent shahri'));
+    await bot.handleUpdate(callbackUpdate(guest, tosh.data));
+    const afterCity = lastScreen();
+    check(
+      'Toshkent shahrida shahar SO\'RALMADI',
+      !afterCity.text.includes('Shaharni tanlang'),
+      firstLine(afterCity.text)
+    );
+    check('darhol tur so\'raldi', afterCity.text.includes('Restoran kerakmi'), firstLine(afterCity.text));
+
+    // --- Bo'sh tur ko'rsatilmaydi ---
+    check(
+      'Toshkent shahrida kafe yo\'q — tugmasi ham yo\'q',
+      !btn(afterCity, 'pl_t_cafe'),
+      afterCity.buttons.map((x) => x.data).join(', ')
+    );
+
+    // --- Muassasalar ---
+    await bot.handleUpdate(callbackUpdate(guest, 'pl_t_restaurant'));
+    const list = lastScreen();
+    const placeBtns = list.buttons.filter((x) => x.data && x.data.startsWith('pl_p_'));
+    check('muassasalar ro\'yxati chiqdi', placeBtns.length > 0, placeBtns.map((x) => x.text).join(', '));
+    check('Delish ro\'yxatda', placeBtns.some((x) => x.text.includes('Delish')));
+
+    await bot.handleUpdate(callbackUpdate(guest, placeBtns.find((x) => x.text.includes('Delish')).data));
+    const chosen = lastScreen();
+    check('tanlangani tasdiqlandi', chosen.text.includes('Delish tanlandi'), firstLine(chosen.text));
+    check('bosh menyu ochildi', !!btn(chosen, 'call_waiter') && !!btn(chosen, 'reserve'));
+
+    // --- Boshqa viloyat: shahar SO'RALADI ---
+    await bot.handleUpdate(callbackUpdate(guest, 'place_start'));
+    const r2 = lastScreen().buttons.find((x) => x.data && x.data.startsWith('pl_r_') && x.text.includes('Toshkent viloyati'));
+    check('Toshkent viloyati ham bor', !!r2);
+    await bot.handleUpdate(callbackUpdate(guest, r2.data));
+    const cityScreen = lastScreen();
+    check('viloyatda shahar so\'raldi', cityScreen.text.includes('Shaharni tanlang'), firstLine(cityScreen.text));
+    const cityBtns = cityScreen.buttons.filter((x) => x.data && x.data.startsWith('pl_c_'));
+    check('shahar tugmalari bor', cityBtns.length > 0, cityBtns.map((x) => x.text).join(', '));
+
+    await bot.handleUpdate(callbackUpdate(guest, cityBtns[0].data));
+    const types = lastScreen();
+    check('Olmaliqda kafe bor', !!btn(types, 'pl_t_cafe'), types.buttons.map((x) => x.data).join(', '));
+    check('Olmaliqda restoran YO\'Q', !btn(types, 'pl_t_restaurant'));
+
+    // --- Joy tanlamasdan amal bajarib bo'lmaydi ---
+    const noPlace = newUser();
+    await bot.handleUpdate(textUpdate(noPlace, '/start'));
+    await bot.handleUpdate(callbackUpdate(noPlace, 'set_lang_uz'));
+    await bot.handleUpdate(contactUpdate(noPlace, '+998901234561'));
+    registeredIds.push(String(noPlace.user.id));
+    await bot.handleUpdate(callbackUpdate(noPlace, 'call_waiter'));
+    check(
+      'joysiz ofitsiant chaqirib bo\'lmadi',
+      lastScreen().text.includes('Viloyatni tanlang') || lastScreen().text.includes('Qaysi muassasa'),
+      firstLine(lastScreen().text)
+    );
+  }
+
+  // ---------- 6) Ruscha ----------
+  console.log('\n6) Til almashtirish (ruscha)');
   {
     const ru = newUser();
     await bot.handleUpdate(textUpdate(ru, '/start'));
@@ -262,20 +388,25 @@ async function main() {
 
     await bot.handleUpdate(contactUpdate(ru, '+998901234501'));
     registeredIds.push(String(ru.user.id));
+    check('ruscha joy tanlash', lastScreen().text.includes('Выберите область'), firstLine(lastScreen().text));
+
+    await pickPlace(bot, ru);
     const home = lastScreen();
     check('ruscha bosh menyu', home.buttons.some((b) => b.text.includes('стол') || b.text.includes('меню')));
   }
 
-  // ---------- 6) QR deep link ----------
+  // ---------- 7) QR deep link ----------
   //
   // Eng nozik joy: QR kod bilan kelgan odam ro'yxatdan o'tish oralig'ida
   // YO'QOLMASLIGI kerak. Kod eslab qolinadi va kontakt berilgach odam
   // to'g'ri o'z stoliga tushadi.
-  console.log('\n6) QR deep link (/start t_<qrToken>) — ro\'yxatdan keyin ham eslanadi');
+  console.log('\n7) QR deep link (/start t_<qrToken>) — ro\'yxatdan keyin ham eslanadi');
   {
     const table = await db.restaurantTable.findFirst({ orderBy: { tableNumber: 'asc' } });
     const qrUser = newUser();
-    await bot.handleUpdate(textUpdate(qrUser, `/start t_${table.qrToken}`));
+    // Havolada endi SLUG ham bor — bitta bot hamma muassasaga xizmat
+    // qiladi va stol tokeni qaysi bazada izlanishini bilishi kerak
+    await bot.handleUpdate(textUpdate(qrUser, `/start t_${SLUG}_${table.qrToken}`));
     await bot.handleUpdate(callbackUpdate(qrUser, 'set_lang_uz'));
     check('QR bilan kelganda ham avval kontakt so\'raldi', lastScreen().text.includes('tanishib olamiz'));
 
@@ -293,8 +424,8 @@ async function main() {
     check('havola o\'sha stolga ishora qiladi', link.includes(table.qrToken));
   }
 
-  // ---------- 7) Yaroqsiz QR ----------
-  console.log('\n7) Yaroqsiz QR kod');
+  // ---------- 8) Yaroqsiz QR ----------
+  console.log('\n8) Yaroqsiz QR kod');
   {
     const badUser = newUser();
     await bot.handleUpdate(textUpdate(badUser, '/start t_bunday_token_yoq_12345'));
@@ -306,12 +437,12 @@ async function main() {
     check('boshi berk ko\'chada qoldirmadi', !!btn(s, 'call_waiter'));
   }
 
-  // ---------- 8) Ofitsiant chaqirish ----------
+  // ---------- 9) Ofitsiant chaqirish ----------
   //
   // Bot endi shu ish uchun. Ikki qadam: qaysi stol -> qaysi ofitsiant.
   // Eng muhimi: xabar HAMMAGA emas, AYNAN tanlangan ofitsiantga borishi
   // kerak — buni socket xonasi nomidan tekshiramiz.
-  console.log('\n8) Ofitsiant chaqirish — aynan bitta odamga');
+  console.log('\n9) Ofitsiant chaqirish — aynan bitta odamga');
   {
     const caller = newUser();
     await register(bot, caller, '+998901234540');
@@ -435,7 +566,7 @@ async function main() {
       // allaqachon boshqa stolga ko\'chib o\'tirgan bo\'ladi.
       const qrGuest = newUser();
       const someTable = await db.restaurantTable.findFirst({ orderBy: { tableNumber: 'asc' } });
-      await bot.handleUpdate(textUpdate(qrGuest, `/start t_${someTable.qrToken}`));
+      await bot.handleUpdate(textUpdate(qrGuest, `/start t_${SLUG}_${someTable.qrToken}`));
       await bot.handleUpdate(callbackUpdate(qrGuest, 'set_lang_uz'));
       await bot.handleUpdate(contactUpdate(qrGuest, '+998901234541'));
       registeredIds.push(String(qrGuest.user.id));
@@ -450,29 +581,29 @@ async function main() {
     }
   }
 
-  // ---------- 9) Olib tashlangan bo'limlar ----------
+  // ---------- 10) Olib tashlangan bo'limlar ----------
   //
   // Bot ataylab kichraytirildi. Eski tugmalar QAYTIB KELMASLIGI kerak —
   // aks holda mijoz botda ham, ilovada ham bir xil ishni qiladi va ikkalasi
   // sekin-asta bir-biridan uzoqlashadi.
-  console.log('\n9) Ortiqcha bo\'limlar olib tashlangan');
+  console.log('\n10) Ortiqcha bo\'limlar olib tashlangan');
   {
     await bot.handleUpdate(callbackUpdate(me, 'home'));
     const home = lastScreen();
     const labels = home.buttons.map((b) => b.data);
-    check('bosh menyuda ATIGI 4 ta tugma', home.buttons.length === 4, labels.join(', '));
+    check('bosh menyuda ATIGI 5 ta tugma', home.buttons.length === 5, labels.join(', '));
     check('menyu varaqlash yo\'q', !labels.includes('menu'));
     check('stol band qilish yo\'q', !labels.includes('pick_table'));
     check('"buyurtmam qayerda" yo\'q', !labels.includes('my_order'));
-    check('qolgani: ilova, chaqiruv, bron, til',
-      ['open_app', 'call_waiter', 'reserve', 'lang'].every((d) => labels.includes(d)));
+    check('qolgani: ilova, chaqiruv, bron, joy, til',
+      ['open_app', 'call_waiter', 'reserve', 'place_start', 'lang'].every((d) => labels.includes(d)));
 
     // Eski tugma bosilsa ham bot yiqilmasligi kerak (eski xabarlar qoladi)
     await bot.handleUpdate(callbackUpdate(me, 'my_order'));
     check('eski tugma bosilsa bot yiqilmadi', true);
   }
-  // ---------- 10) Bron qilish ----------
-  console.log('\n10) Bosqichma-bosqich bron qilish');
+  // ---------- 11) Bron qilish ----------
+  console.log('\n11) Bosqichma-bosqich bron qilish');
   {
     const guest = newUser();
     await register(bot, guest, '+998901234567');
@@ -535,8 +666,8 @@ async function main() {
     await db.tableReservation.deleteMany({ where: { clientName: 'Dilnoza Karimova' } });
   }
 
-  // ---------- 11) Skanersiz Mini App ----------
-  console.log('\n11) QR kodsiz menyuni ochish');
+  // ---------- 12) Skanersiz Mini App ----------
+  console.log('\n12) QR kodsiz menyuni ochish');
   {
     const q = newUser();
     await register(bot, q, '+998901234520');
@@ -558,8 +689,8 @@ async function main() {
     }
   }
 
-  // ---------- 12) Bekor qilish ----------
-  console.log('\n12) Oqimni bekor qilish');
+  // ---------- 13) Bekor qilish ----------
+  console.log('\n13) Oqimni bekor qilish');
   {
     const q = newUser();
     await register(bot, q, '+998901234521');
@@ -575,18 +706,18 @@ async function main() {
     check('bekor qilingach eski oqim davom etmadi', !!btn(lastScreen(), 'reserve'));
   }
 
-  // ---------- 13) Raqamni o'chirish (/stop) ----------
+  // ---------- 14) Raqamni o'chirish (/stop) ----------
   //
   // Matnda "xohlagan paytda /stop yozib o'chirtirishingiz mumkin" deyilgan.
   // Va'da berilgan narsa HAQIQATAN ishlashi kerak.
-  console.log('\n13) /stop — raqamni o\'chirish');
+  console.log('\n14) /stop — raqamni o\'chirish');
   {
     const q = newUser();
     await register(bot, q, '+998901234530');
-    check('avval ro\'yxatda edi', !!(await db.telegramCustomer.findUnique({ where: { telegramId: String(q.user.id) } })));
+    check('avval ro\'yxatda edi', !!(await masterPrisma.telegramCustomer.findUnique({ where: { telegramId: String(q.user.id) } })));
 
     await bot.handleUpdate(textUpdate(q, '/stop'));
-    const removed = await db.telegramCustomer.findUnique({ where: { telegramId: String(q.user.id) } });
+    const removed = await masterPrisma.telegramCustomer.findUnique({ where: { telegramId: String(q.user.id) } });
     check('bazadan o\'chirildi', !removed);
 
     const s = lastScreen();
@@ -600,8 +731,8 @@ async function main() {
 
   // ---------- Tozalash ----------
   // Sinov yaratgan mijozlar haqiqiy bazada qolib ketmasin
-  await db.telegramCustomer.deleteMany({ where: { telegramId: { in: registeredIds } } });
-  const left = await db.telegramCustomer.count({ where: { telegramId: { in: registeredIds } } });
+  await masterPrisma.telegramCustomer.deleteMany({ where: { telegramId: { in: registeredIds } } });
+  const left = await masterPrisma.telegramCustomer.count({ where: { telegramId: { in: registeredIds } } });
   console.log(`\n  ✔ tozalandi — ${registeredIds.length} ta sinov mijozi o'chirildi${left ? ` (${left} ta qoldi!)` : ''}`);
   if (left) failures += 1;
 

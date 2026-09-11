@@ -1,35 +1,40 @@
 // TELEGRAM MIJOZLARI.
 //
-// Bot odatda hamma ishni HTTP API orqali qiladi — shu bilan tekshiruvlar
-// bitta joyda, controller'larda qoladi. Bu yerda esa ataylab boshqacha:
-// ro'yxatga olish to'g'ridan-to'g'ri tenant bazasiga yoziladi.
+// Yozuv MASTER bazada, muassasa bazasida emas — va buning sababi botning
+// tuzilishida. Avval har bir restoranning O'Z boti bor edi, shuning uchun
+// mijoz ham o'sha restoranning bazasiga yozilardi. Endi butun platformada
+// BITTA bot ishlaydi: odam avval ro'yxatdan o'tadi, muassasani KEYIN
+// tanlaydi. Ya'ni ro'yxatga olish paytida qaysi bazaga yozishni bilish
+// mumkin emas.
 //
-// Sababi xavfsizlik. Agar bu ochiq endpoint bo'lsa, kim xohlasa istalgan
-// `telegramId` ni istalgan raqam bilan ro'yxatdan o'tkazib qo'yardi va bot
-// keyin o'sha odamni "tanigan" bo'lardi. Bot backend'ning O'Z ichida
-// ishlaganligi uchun bu yerda tashqi kirish yo'li umuman kerak emas.
+// Mijoz uchun ham qulayroq: raqamini bir marta beradi, keyin istalgan
+// muassasaga kiradi.
+//
+// Bot backend'ning O'Z ichida ishlagani uchun bu yerda HTTP endpoint
+// kerak emas — u ochiq bo'lsa, kim xohlasa istalgan `telegramId` ni
+// istalgan raqam bilan ro'yxatdan o'tkazib qo'yardi.
 
-const { getTenantClient } = require('../config/tenantDb');
+const masterPrisma = require('../config/masterDb');
 
 // Telegram ID doim son, lekin bazada matn: 32-bitdan katta bo'lishi mumkin
 const idOf = (telegramId) => String(telegramId);
 
-async function find(slug, telegramId) {
-  const db = await getTenantClient(slug);
-  return db.telegramCustomer.findUnique({ where: { telegramId: idOf(telegramId) } });
+async function find(telegramId) {
+  return masterPrisma.telegramCustomer.findUnique({
+    where: { telegramId: idOf(telegramId) },
+  });
 }
 
 // Ro'yxatdan o'tkazish yoki mavjudini yangilash.
 // Odam raqamini almashtirgan bo'lsa — yangisi yoziladi.
-async function register(slug, { telegramId, phone, firstName, username, lang }) {
-  const db = await getTenantClient(slug);
+async function register({ telegramId, phone, firstName, username, lang }) {
   const data = {
     phone: String(phone).trim(),
     firstName: firstName || null,
     username: username || null,
     lang: lang === 'ru' ? 'ru' : 'uz',
   };
-  return db.telegramCustomer.upsert({
+  return masterPrisma.telegramCustomer.upsert({
     where: { telegramId: idOf(telegramId) },
     update: { ...data, lastSeenAt: new Date() },
     create: { telegramId: idOf(telegramId), ...data },
@@ -37,10 +42,9 @@ async function register(slug, { telegramId, phone, firstName, username, lang }) 
 }
 
 // Til almashtirilganda — keyingi safar o'sha tilda kutib olamiz
-async function setLang(slug, telegramId, lang) {
-  const db = await getTenantClient(slug);
+async function setLang(telegramId, lang) {
   try {
-    await db.telegramCustomer.update({
+    await masterPrisma.telegramCustomer.update({
       where: { telegramId: idOf(telegramId) },
       data: { lang: lang === 'ru' ? 'ru' : 'uz' },
     });
@@ -49,15 +53,27 @@ async function setLang(slug, telegramId, lang) {
   }
 }
 
-// Mijoz raqamini o'chirish (/stop). Yozuv topilmasa — jimgina o'tamiz:
-// odam uchun natija bir xil, "yo'q edi" deb tushuntirishning ma'nosi yo'q.
-async function remove(slug, telegramId) {
-  const db = await getTenantClient(slug);
+// Oxirgi tanlagan muassasasi. Keyingi safar uni birinchi bo'lib taklif
+// qilamiz — doimiy mijoz har safar to'rt qadamdan o'tmasin.
+async function setLastPlace(telegramId, slug) {
   try {
-    await db.telegramCustomer.delete({ where: { telegramId: idOf(telegramId) } });
+    await masterPrisma.telegramCustomer.update({
+      where: { telegramId: idOf(telegramId) },
+      data: { lastSlug: slug || null },
+    });
+  } catch (_) {
+    /* ro'yxatdan o'tmagan bo'lsa — e'tiborsiz */
+  }
+}
+
+// Mijoz raqamini o'chirish (/stop). Yozuv topilmasa — jimgina o'tamiz:
+// odam uchun natija bir xil.
+async function remove(telegramId) {
+  try {
+    await masterPrisma.telegramCustomer.delete({ where: { telegramId: idOf(telegramId) } });
   } catch (err) {
     if (err.code !== 'P2025') throw err;
   }
 }
 
-module.exports = { find, register, setLang, remove };
+module.exports = { find, register, setLang, setLastPlace, remove };

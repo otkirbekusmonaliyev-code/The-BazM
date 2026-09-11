@@ -49,6 +49,8 @@ const RESTAURANT_FIELDS = {
   name: true,
   slug: true,
   businessType: true,
+  region: true,
+  city: true,
   logoUrl: true,
   subscriptionPlan: true,
   subscriptionStatus: true,
@@ -127,6 +129,8 @@ async function getRestaurant(req, res, next) {
 const createRestaurantSchema = z.object({
   name: z.string().min(2),
   slug: z.string().min(2).optional(),
+  region: z.string().min(2).optional(),
+  city: z.string().min(2).optional(),
   plan: z.enum(['basic', 'standard', 'pro']).default('basic'),
   businessType: z.enum(['restaurant', 'cafe']).default('restaurant'),
   adminName: z.string().min(2).optional(),
@@ -195,6 +199,8 @@ async function activateRestaurant(req, res, next) {
 
 const updateRestaurantSchema = z.object({
   name: z.string().min(2).optional(),
+  region: z.string().min(2).nullable().optional(),
+  city: z.string().min(2).nullable().optional(),
   logoUrl: z.string().optional().nullable(),
   telegramBotToken: z.string().optional().nullable(),
   subscriptionPlan: z.enum(['basic', 'standard', 'pro']).optional(),
@@ -309,6 +315,10 @@ async function approveApplication(req, res, next) {
       adminName: application.name,
       adminPhone: application.phone,
       adminPassword: req.body.adminPassword,
+      // Ariza allaqachon joylashuvni so'ragan — uni muassasaga ko'chiramiz,
+      // aks holda botdagi qidiruvda bu joy ko'rinmay qolardi
+      region: application.region,
+      city: application.city,
     });
 
     // Parolni SHIFRLANGAN holda saqlaymiz: ariza egasi uni saytdan

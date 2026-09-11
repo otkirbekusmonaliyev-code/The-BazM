@@ -79,10 +79,23 @@ model RestaurantApplication {
 }
 
 model Restaurant {
-  id               String       @id @default(uuid())
-  name             String
-  slug             String       @unique // subdomain: delish -> delish.bazm.uz
-  businessType     BusinessType @default(restaurant)
+  id           String       @id @default(uuid())
+  name         String
+  slug         String       @unique // subdomain: delish -> delish.bazm.uz
+  businessType BusinessType @default(restaurant)
+
+  // JOYLASHUV — bot shu bo'yicha qidiradi.
+  //
+  // Telegram botida mijoz avval viloyat, so'ng shaharni tanlaydi va
+  // o'sha yerdagi muassasalar ro'yxatini oladi. Shuning uchun joylashuv
+  // ARIZADA emas, muassasaning O'ZIDA turishi kerak: ariza tasdiqlangach
+  // o'chirilib ketishi mumkin, muassasa esa qoladi.
+  //
+  // `null` bo'lishi mumkin — eski yozuvlarda yo'q edi. Bunday muassasa
+  // botdagi ro'yxatda ko'rinmaydi (adresi noma'lum joyga mijoz yubora
+  // olmaymiz), lekin qolgan hamma joyda ishlashda davom etadi.
+  region           String?
+  city             String?
   logoUrl          String?
   telegramBotToken String?
 
@@ -159,6 +172,36 @@ model BillingPayment {
   createdAt DateTime      @default(now())
 
   @@index([invoiceId])
+}
+
+// TELEGRAM BOTIDAN RO'YXATDAN O'TGAN MIJOZ.
+//
+// BU YOZUV MASTER BAZADA, muassasa bazasida emas — va buning sababi
+// botning o'zgargan tuzilishida. Avval har bir restoranning O'Z boti bor
+// edi, shuning uchun mijoz ham o'sha restoranning bazasiga yozilardi.
+// Endi butun platformada BITTA bot ishlaydi: odam avval ro'yxatdan
+// o'tadi, muassasani KEYIN tanlaydi. Ya'ni ro'yxatdan o'tish paytida
+// qaysi bazaga yozishni bilish mumkin emas.
+//
+// Bu mijoz uchun ham qulay: raqamini bir marta beradi, keyin istalgan
+// muassasani tanlaydi.
+//
+// `telegramId` — Telegram foydalanuvchi raqami. Kontakt HAQIQATAN
+// o'ziniki ekani tekshiriladi (contact.user_id === from.id).
+model TelegramCustomer {
+  id         String   @id @default(uuid())
+  telegramId String   @unique
+  phone      String
+  firstName  String?
+  username   String?
+  lang       String   @default("uz")
+  // Oxirgi tanlagan muassasasi — keyingi safar taklif qilish uchun
+  lastSlug   String?
+  isBlocked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now()) @updatedAt
+
+  @@index([phone])
 }
 
 // Yagona login uchun global telefon indeksi.

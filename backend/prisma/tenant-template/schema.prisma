@@ -160,31 +160,3 @@ model TableReservation {
   note            String?
   createdAt       DateTime          @default(now())
 }
-
-// TELEGRAM BOTIDAN RO'YXATDAN O'TGAN MIJOZ.
-//
-// Bot endi ish boshlashdan oldin mijozdan kontakt so'raydi. Sabablari:
-//   - bron va buyurtmada raqam qayta-qayta so'ralmasin,
-//   - ofitsiant chaqirilganda kim chaqirgani ma'lum bo'lsin,
-//   - muassasa o'z mijozlarini biladi (qayta murojaat, chegirma).
-//
-// Yozuv HAR BIR MUASSASANING O'Z bazasida turadi: bir restoranga raqamini
-// bergan odam boshqa restoranga avtomatik tanilmaydi. Bu ataylab shunday —
-// mijoz raqamini kimga berganini o'zi hal qiladi.
-//
-// `telegramId` — Telegram foydalanuvchi raqami. Kontakt HAQIQATAN O'ZINIKI
-// ekani tekshiriladi (contact.user_id === from.id), shuning uchun bu yerga
-// begonaning raqami tushib qolmaydi.
-model TelegramCustomer {
-  id         String   @id @default(uuid())
-  telegramId String   @unique
-  phone      String
-  firstName  String?
-  username   String?
-  lang       String   @default("uz")
-  isBlocked  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  lastSeenAt DateTime @default(now()) @updatedAt
-
-  @@index([phone])
-}

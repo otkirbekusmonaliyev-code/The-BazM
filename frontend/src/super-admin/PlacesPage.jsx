@@ -169,8 +169,20 @@ export default function PlacesPage({ api, type, onChanged }) {
 }
 
 function CreatePlaceModal({ api, type, copy, open, onClose, onCreated }) {
-  const empty = { name: '', slug: '', plan: 'basic', adminName: '', adminPhone: '+998', adminPassword: '' };
+  const empty = {
+    name: '',
+    slug: '',
+    plan: 'basic',
+    region: '',
+    city: '',
+    adminName: '',
+    adminPhone: '+998',
+    adminPassword: '',
+  };
   const [form, setForm] = useState(empty);
+  // Viloyatlar ro'yxati serverdan — sayt formasi ham aynan shuni
+  // ishlatadi, ya'ni ikkalasi bir xil nomlarni biladi
+  const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -185,12 +197,21 @@ function CreatePlaceModal({ api, type, copy, open, onClose, onCreated }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    if (!open || regions.length > 0) return;
+    api.get('/public/regions').then(setRegions).catch(() => {});
+  }, [open, api, regions.length]);
+
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   async function submit(e) {
     e.preventDefault();
     if (!isValidPhone(form.adminPhone)) {
       setError('Admin telefon raqamini 9 xonali qilib kiriting');
+      return;
+    }
+    if (!form.region || !form.city) {
+      setError('Viloyat va shaharni tanlang — Telegram botida qidiruv shu bo\'yicha ishlaydi');
       return;
     }
     setLoading(true);
@@ -203,6 +224,10 @@ function CreatePlaceModal({ api, type, copy, open, onClose, onCreated }) {
         adminPhone: form.adminPhone,
       };
       if (form.slug.trim()) body.slug = form.slug.trim();
+      // JOYLASHUV — botdagi qidiruv uchun. Berilmasa muassasa botda
+      // ko'rinmaydi, shuning uchun forma uni majburiy qiladi.
+      if (form.region) body.region = form.region;
+      if (form.city) body.city = form.city;
       if (form.adminName.trim()) body.adminName = form.adminName.trim();
       if (form.adminPassword.trim()) body.adminPassword = form.adminPassword.trim();
 
@@ -271,6 +296,31 @@ function CreatePlaceModal({ api, type, copy, open, onClose, onCreated }) {
                   <option value="basic">Basic</option>
                   <option value="standard">Standard</option>
                   <option value="pro">Pro</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="field-row">
+              <div className="field">
+                <label>Viloyat *</label>
+                <select
+                  value={form.region}
+                  onChange={(e) => setForm((f) => ({ ...f, region: e.target.value, city: '' }))}
+                  required
+                >
+                  <option value="">Tanlang</option>
+                  {regions.map((r) => (
+                    <option key={r.name} value={r.name}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Shahar / tuman *</label>
+                <select value={form.city} onChange={set('city')} required disabled={!form.region}>
+                  <option value="">{form.region ? 'Tanlang' : 'Avval viloyat'}</option>
+                  {(regions.find((r) => r.name === form.region) || { cities: [] }).cities.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
             </div>

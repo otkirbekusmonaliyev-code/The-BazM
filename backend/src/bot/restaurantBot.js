@@ -47,11 +47,15 @@
 const { Telegraf, Markup } = require('telegraf');
 const { message } = require('telegraf/filters');
 const { tableWebUrl, tablePickerUrl, demoUrl } = require('../utils/links');
+const placeDirectory = require('../services/placeDirectory');
 const { getTenantClient } = require('../config/tenantDb');
 const botCustomers = require('../services/botCustomers');
 const waiterCalls = require('../services/waiterCalls');
 const session = require('./session');
 const { t, pickLang } = require('./texts');
+
+// Muassasa tanlanmagunicha shu nom ishlatiladi
+const PLATFORM_NAME = process.env.PLATFORM_NAME || 'Bazm';
 
 const API_BASE = () => `http://127.0.0.1:${process.env.PORT || 4000}/api`;
 const REQUEST_TIMEOUT = 8000;
@@ -198,6 +202,10 @@ function mainMenu(c) {
     [Markup.button.callback(c.menu.openApp, 'open_app')],
     [Markup.button.callback(c.menu.callWaiter, 'call_waiter')],
     [Markup.button.callback(c.menu.reserve, 'reserve')],
+    // Bitta bot hamma muassasaga xizmat qilgani uchun "boshqa joyga
+    // o'tish" har doim qo'l ostida turishi kerak — odam bugun bir
+    // restoranda, ertaga boshqasida bo'ladi
+    [Markup.button.callback(c.place.change, 'place_start')],
     [Markup.button.callback(c.menu.lang, 'lang')],
   ]);
 }
@@ -213,24 +221,41 @@ const fmtTime = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getM
 //  BOT
 // ============================================================
 
-function createRestaurantBot({ token, slug, name }) {
+function createPlatformBot({ token }) {
   const bot = new Telegraf(token, { handlerTimeout: 20000 });
 
-  // Har bir handler'dan oldin: sessiya + til
+  // Har bir handler'dan oldin: sessiya + til + TANLANGAN MUASSASA.
+  //
+  // `slug` sessiyadan keladi, funksiya argumentidan emas — bitta bot
+  // hamma muassasaga xizmat qiladi va qaysi biri ekani har bir suhbatda
+  // alohida hal qilinadi.
   const ctxOf = (ctx) => {
     const s = session.get(ctx);
     if (!s.lang) s.lang = pickLang(s, ctx);
-    return { s, c: t(s.lang) };
+    return { s, c: t(s.lang), slug: (s.place && s.place.slug) || null };
   };
 
+  // ctxOf chaqirilmaydigan joylar uchun
+  const placeSlug = (ctx) => {
+    const s = session.get(ctx);
+    return (s.place && s.place.slug) || null;
+  };
+
+  // Muassasa nomi — salomlashishda ishlatiladi. Tanlanmagan bo'lsa
+  // platformaning o'z nomi.
+  const placeName = (s) => (s.place && s.place.name) || PLATFORM_NAME;
+
   async function goHome(ctx, prefix) {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     s.draft = null;
     // Ro'yxatdan o'tmagan odamga menyuni ko'rsatib, so'ng har bir tugmada
     // "avval raqam bering" deyish — bu ochiq masxara. Bir marta so'raymiz.
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
+    if (!(await restoreLastPlace(ctx, s))) return askRegion(ctx, c, s);
     const head = prefix ? `${prefix}\n\n` : '';
-    return show(ctx, `${head}${c.whatNext}`, mainMenu(c));
+    // Qaysi muassasada ekani har doim ko'rinib tursin — bitta bot
+    // o'nlab joyga xizmat qiladi va odam adashib ketishi mumkin
+    return show(ctx, `📍 ${s.place.name}\n\n${head}${c.whatNext}`, mainMenu(c));
   }
 
   // ============================================================
@@ -265,9 +290,9 @@ function createRestaurantBot({ token, slug, name }) {
     const s = session.get(ctx);
     if (s.customer !== undefined) return s.customer;
     try {
-      s.customer = await botCustomers.find(slug, ctx.from.id);
+      s.customer = await botCustomers.find(ctx.from.id);
     } catch (err) {
-      console.error(`   [bot:${slug}] mijozlar jadvali o'qilmadi: ${err.message}`);
+      console.error(`   [bot] mijozlar jadvali o'qilmadi: ${err.message}`);
       s.customer = { degraded: true };
     }
     return s.customer;
@@ -293,11 +318,21 @@ function createRestaurantBot({ token, slug, name }) {
 
     const head = greeting ? `${greeting}\n\n` : '';
 
-    if (pending) {
+    if (pending && pending.slug && pending.token) {
+      // QR kod qaysi muassasaniki ekani havolada aytilgan — joy tanlash
+      // qadamlari umuman kerak emas, odam allaqachon o'sha zalda o'tiribdi
+      const place = await placeDirectory.findServing(pending.slug).catch(() => null);
+      if (!place) {
+        return ctx.reply(`${head}${c.qr.invalid}`, mainMenu(c));
+      }
+      s.place = { slug: place.slug, name: place.name, businessType: place.businessType };
+      botCustomers.setLastPlace(ctx.from.id, place.slug).catch(() => {});
+
+      const slug = place.slug;
       try {
-        const table = await api(slug, `/client/tables/by-qr/${encodeURIComponent(pending)}`);
+        const table = await api(slug, `/client/tables/by-qr/${encodeURIComponent(pending.token)}`);
         s.table = { id: table.id, number: table.tableNumber, token: null };
-        const link = withLink(c, `${head}${c.qr.valid(table.tableNumber)}`, tableWebUrl(slug, pending));
+        const link = withLink(c, `${head}${c.qr.valid(table.tableNumber)}`, tableWebUrl(slug, pending.token));
         return ctx.reply(
           link.text,
           Markup.inlineKeyboard([...link.rows, [Markup.button.callback(c.menu.back, 'home')]])
@@ -312,6 +347,11 @@ function createRestaurantBot({ token, slug, name }) {
       }
     }
 
+    // Joy tanlanmagan bo'lsa — avval shuni so'raymiz
+    if (!(await restoreLastPlace(ctx, s))) {
+      if (head) await ctx.reply(head.trim());
+      return askRegion(ctx, c, s);
+    }
     return ctx.reply(`${head}${c.whatNext}`, mainMenu(c));
   }
 
@@ -327,20 +367,250 @@ function createRestaurantBot({ token, slug, name }) {
     );
   }
 
+  // ============================================================
+  //  JOY TANLASH — viloyat -> shahar -> tur -> muassasa
+  // ============================================================
+  //
+  // Bitta bot butun platformaga xizmat qilgani uchun mijoz avval "qaysi
+  // muassasa?" degan savolga javob beradi. Davlat so'ralmaydi — hozircha
+  // faqat O'zbekiston, va bitta variantli savol berish — vaqt o'g'irlash.
+  //
+  // FAQAT MAVJUD JOYLAR KO'RSATILADI: muassasasi yo'q viloyat ham, shahar
+  // ham ro'yxatga tushmaydi. Aks holda odam to'rt qadam bosib, oxirida
+  // "bu yerda hech narsa yo'q" degan javob olardi.
+  //
+  // Tugma ma'lumoti 64 baytdan oshmasligi kerak, viloyat nomlari esa uzun.
+  // Shuning uchun tugmalarda RAQAM turadi, ro'yxatning o'zi sessiyada
+  // saqlanadi.
+
+  const rowsOf = (items, prefix, perRow = 2) => {
+    const rows = [];
+    for (let i = 0; i < items.length; i += perRow) {
+      rows.push(
+        items.slice(i, i + perRow).map((x, k) =>
+          Markup.button.callback(x.label, `${prefix}${i + k}`)
+        )
+      );
+    }
+    return rows;
+  };
+
+  // 1-qadam: viloyat
+  async function askRegion(ctx, c, s) {
+    const regions = await placeDirectory.regionsWithPlaces();
+    if (regions.length === 0) {
+      return show(ctx, c.place.noRegions, Markup.inlineKeyboard([]));
+    }
+    s.pick = { regions: regions.map((r) => r.name) };
+    const items = regions.map((r) => ({ label: `${r.name} (${r.count})` }));
+    return show(
+      ctx,
+      `${c.place.intro}\n\n${c.place.country}\n${c.place.askRegion}`,
+      Markup.inlineKeyboard(rowsOf(items, 'pl_r_', 1))
+    );
+  }
+
+  // 2-qadam: shahar. Toshkent shahri uchun bu qadam O'TKAZIB YUBORILADI —
+  // "Toshkent shahri" deganda odam allaqachon shaharni aytgan bo'ladi.
+  async function askCity(ctx, c, s) {
+    const region = s.pick.region;
+    if (placeDirectory.skipsCityStep(region)) {
+      s.pick.city = null;
+      return askType(ctx, c, s);
+    }
+
+    const cities = await placeDirectory.citiesWithPlaces(region);
+    if (cities.length === 0) return askRegion(ctx, c, s);
+
+    s.pick.cities = cities.map((x) => x.name);
+    const items = cities.map((x) => ({ label: `${x.name} (${x.count})` }));
+    return show(
+      ctx,
+      c.place.askCity(region),
+      Markup.inlineKeyboard([
+        ...rowsOf(items, 'pl_c_', 2),
+        [Markup.button.callback(c.place.backRegion, 'place_start')],
+      ])
+    );
+  }
+
+  // 3-qadam: restoran yoki kafe. Bo'sh turdagi tugma KO'RSATILMAYDI.
+  async function askType(ctx, c, s) {
+    const { region, city } = s.pick;
+    const available = await placeDirectory.typesAvailable(region, city);
+    const where = city ? `${region}, ${city}` : region;
+
+    const rows = [];
+    if (available.restaurant > 0) {
+      rows.push([
+        Markup.button.callback(`${c.place.restaurant} (${available.restaurant})`, 'pl_t_restaurant'),
+      ]);
+    }
+    if (available.cafe > 0) {
+      rows.push([Markup.button.callback(`${c.place.cafe} (${available.cafe})`, 'pl_t_cafe')]);
+    }
+    if (rows.length === 0) return askRegion(ctx, c, s);
+
+    rows.push([
+      Markup.button.callback(
+        placeDirectory.skipsCityStep(region) ? c.place.backRegion : c.place.backCity,
+        placeDirectory.skipsCityStep(region) ? 'place_start' : 'pl_back_city'
+      ),
+    ]);
+    return show(ctx, c.place.askType(where), Markup.inlineKeyboard(rows));
+  }
+
+  // 4-qadam: muassasa
+  async function askWhich(ctx, c, s) {
+    const { region, city, type } = s.pick;
+    const places = await placeDirectory.placesIn(region, city, type);
+    if (places.length === 0) {
+      const label = type === 'cafe' ? c.place.cafe : c.place.restaurant;
+      return show(
+        ctx,
+        c.place.noPlaces(label.trim()),
+        Markup.inlineKeyboard([[Markup.button.callback(c.place.backRegion, 'place_start')]])
+      );
+    }
+
+    s.pick.places = places.map((x) => x.slug);
+    // Toshkent shahrida shahar so'ralmagani uchun nom yonida tumanni
+    // ko'rsatamiz — bir xil nomli joylarni ajratish uchun
+    const items = places.map((x) => ({
+      label: placeDirectory.skipsCityStep(region) && x.city ? `${x.name} · ${x.city}` : x.name,
+    }));
+    return show(
+      ctx,
+      c.place.askPlace(places.length),
+      Markup.inlineKeyboard([
+        ...rowsOf(items, 'pl_p_', 1),
+        [Markup.button.callback(c.place.backRegion, 'place_start')],
+      ])
+    );
+  }
+
+  bot.action('place_start', async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
+    s.pick = {};
+    try {
+      return await askRegion(ctx, c, s);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([]));
+    }
+  });
+
+  bot.action(/^pl_r_(\d+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    const list = (s.pick && s.pick.regions) || [];
+    const region = list[Number(ctx.match[1])];
+    if (!region) return askRegion(ctx, c, s);
+    s.pick = { ...s.pick, region, city: null };
+    try {
+      return await askCity(ctx, c, s);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([]));
+    }
+  });
+
+  bot.action(/^pl_c_(\d+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    const list = (s.pick && s.pick.cities) || [];
+    const city = list[Number(ctx.match[1])];
+    if (!city) return askRegion(ctx, c, s);
+    s.pick.city = city;
+    try {
+      return await askType(ctx, c, s);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([]));
+    }
+  });
+
+  bot.action('pl_back_city', async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    if (!s.pick || !s.pick.region) return askRegion(ctx, c, s);
+    return askCity(ctx, c, s);
+  });
+
+  bot.action(/^pl_t_(restaurant|cafe)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    if (!s.pick || !s.pick.region) return askRegion(ctx, c, s);
+    s.pick.type = ctx.match[1];
+    try {
+      return await askWhich(ctx, c, s);
+    } catch (err) {
+      return show(ctx, errorText(c, err), Markup.inlineKeyboard([]));
+    }
+  });
+
+  bot.action(/^pl_p_(\d+)$/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const { s, c } = ctxOf(ctx);
+    const list = (s.pick && s.pick.places) || [];
+    const chosen = list[Number(ctx.match[1])];
+    if (!chosen) return askRegion(ctx, c, s);
+
+    // Tanlangan muassasa shu orada to'xtatilgan bo'lishi mumkin —
+    // eski tugma bosilganda shu holat yuzaga keladi
+    const place = await placeDirectory.findServing(chosen);
+    if (!place) {
+      return show(
+        ctx,
+        c.place.gone,
+        Markup.inlineKeyboard([[Markup.button.callback(c.place.change, 'place_start')]])
+      );
+    }
+
+    s.place = { slug: place.slug, name: place.name, businessType: place.businessType };
+    s.pick = null;
+    // Stol tanlovi eski muassasaga tegishli edi — tozalaymiz
+    s.table = null;
+    s.call = null;
+    botCustomers.setLastPlace(ctx.from.id, place.slug).catch(() => {});
+
+    return show(ctx, `${c.place.chosen(place.name)}\n\n${c.whatNext}`, mainMenu(c));
+  });
+
+  // Muassasa tanlanmagan bo'lsa — amalga o'tkazmaymiz
+  async function requirePlace(ctx, c) {
+    const s = session.get(ctx);
+    if (s.place && s.place.slug) return true;
+    await show(ctx, c.place.needPlace);
+    await askRegion(ctx, c, s);
+    return false;
+  }
+
   // ---------- /start ----------
   bot.start(async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     s.draft = null;
     const payload = (ctx.startPayload || '').trim();
 
-    // QR kod orqali kelgan: t_<qrToken>.
+    // QR KOD ORQALI KELGAN: t_<slug>_<qrToken>
+    //
+    // Slug endi havolaning O'ZIDA. Avval bitta restoranga bitta bot
+    // to'g'ri kelardi va slug botning o'zidan ma'lum edi; bitta platforma
+    // botida esa qaysi muassasaning stoli ekanini havoladan bilishdan
+    // boshqa iloj yo'q (stol tokenlari har bir muassasaning O'Z bazasida).
+    //
     // Kodni DARHOL eslab qolamiz — ro'yxatdan o'tish oralig'ida yo'qolmasin.
-    if (payload.startsWith('t_')) s.pendingQr = payload.slice(2);
+    if (payload.startsWith('t_')) {
+      const rest = payload.slice(2);
+      const cut = rest.lastIndexOf('_');
+      if (cut > 0) {
+        s.pendingQr = { slug: rest.slice(0, cut), token: rest.slice(cut + 1) };
+      }
+    }
 
     // Til hali bir marta ham tanlanmagan bo'lsa — avval shuni so'raymiz
     if (!s.langChosen) {
       return ctx.reply(
-        `${c.welcome(name)}\n\n${c.chooseLang}`,
+        `${c.welcome(placeName(s))}\n\n${c.chooseLang}`,
         Markup.inlineKeyboard([
           [Markup.button.callback("🇺🇿  O'zbekcha", 'set_lang_uz')],
           [Markup.button.callback('🇷🇺  Русский', 'set_lang_ru')],
@@ -354,13 +624,39 @@ function createRestaurantBot({ token, slug, name }) {
   // Til tanlangandan keyin ham, /start dan keyin ham shu yerga tushamiz
   async function startOrAsk(ctx, c, s) {
     const customer = await currentCustomer(ctx);
-    if (!customer) return askRegistration(ctx, c, c.welcome(name));
+    if (!customer) return askRegistration(ctx, c, c.welcome(placeName(s)));
 
     const greeting = customer.firstName
       ? c.auth.back(customer.firstName)
-      : c.welcome(name);
+      : c.welcome(placeName(s));
     return afterRegistration(ctx, c, s, greeting);
   }
+
+  // Oxirgi tanlagan muassasasini tiklaymiz — doimiy mijoz har safar
+  // to'rt qadamdan o'tmasin. Muassasa endi ishlamayotgan bo'lsa jimgina
+  // o'tkazib yuboriladi va odam qaytadan tanlaydi.
+  async function restoreLastPlace(ctx, s) {
+    if (s.place && s.place.slug) return true;
+    const customer = s.customer;
+    if (!customer || !customer.lastSlug) return false;
+    try {
+      const place = await placeDirectory.findServing(customer.lastSlug);
+      if (!place) return false;
+      s.place = { slug: place.slug, name: place.name, businessType: place.businessType };
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Muassasani almashtirish — bitta bot o'nlab joyga xizmat qilgani uchun
+  // bu buyruq har doim qo'l ostida bo'lishi kerak
+  bot.command('joy', async (ctx) => {
+    const { s, c } = ctxOf(ctx);
+    if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
+    s.pick = {};
+    return askRegion(ctx, c, s);
+  });
 
   bot.command('demo', async (ctx) => {
     const { c } = ctxOf(ctx);
@@ -370,11 +666,11 @@ function createRestaurantBot({ token, slug, name }) {
   // Raqamni o'chirish. Va'da berilgan narsa bajarilishi kerak: matnda
   // "/stop yozib o'chirtirishingiz mumkin" deyilgan.
   bot.command('stop', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     try {
-      await botCustomers.remove(slug, ctx.from.id);
+      await botCustomers.remove(ctx.from.id);
     } catch (err) {
-      console.error(`   [bot:${slug}] mijoz o'chirilmadi: ${err.message}`);
+      console.error(`   [bot] mijoz o'chirilmadi: ${err.message}`);
     }
     s.customer = undefined;
     s.table = null;
@@ -385,7 +681,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.command('menu', (ctx) => goHome(ctx));
   bot.command('help', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     // Ro'yxatdan o'tmaganga ishlaydigan tugmalar emas, keyingi qadam kerak
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c, c.help);
     return ctx.reply(c.help, mainMenu(c));
@@ -393,7 +689,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // Har qanday oqimni to'xtatish. Ikkala tilda ham ishlaydi.
   const cancelFlow = async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     const had = !!s.draft;
     s.draft = null;
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
@@ -441,7 +737,7 @@ function createRestaurantBot({ token, slug, name }) {
     }
 
     // Til tanlovi keyingi safar ham eslansin
-    botCustomers.setLang(slug, ctx.from.id, s.lang).catch(() => {});
+    botCustomers.setLang(ctx.from.id, s.lang).catch(() => {});
     if (s.customer && s.customer.lang) s.customer.lang = s.lang;
 
     return show(ctx, `${c.langSet}\n\n${c.whatNext}`, mainMenu(c));
@@ -453,8 +749,9 @@ function createRestaurantBot({ token, slug, name }) {
   // bo'lsa — o'sha stol bilan ochiladi, bo'lmasa ilovaning o'zi stol
   // tanlashni so'raydi.
   bot.action('open_app', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!(await requireRegistration(ctx, c))) return null;
+    if (!(await requirePlace(ctx, c))) return null;
     await ctx.answerCbQuery();
 
     const url =
@@ -505,7 +802,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // 2-qadam. Stol tanlandi — endi kimni chaqirishni so'raymiz.
   async function askWaiter(ctx, c, s) {
-    const db = await getTenantClient(slug);
+    const db = await getTenantClient(s.place.slug);
     const { waiters, allBusy } = await waiterCalls.listCallableWaiters(db);
 
     if (waiters.length === 0) {
@@ -529,7 +826,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // 1-qadam. Har safar shu yerdan boshlanadi.
   async function askTable(ctx, c) {
-    const db = await getTenantClient(slug);
+    const db = await getTenantClient(placeSlug(ctx));
     const tables = await waiterCalls.listTables(db);
     if (tables.length === 0) {
       return show(ctx, c.call.noTables, Markup.inlineKeyboard([backRow(c)]));
@@ -542,8 +839,9 @@ function createRestaurantBot({ token, slug, name }) {
   }
 
   bot.action('call_waiter', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!(await requireRegistration(ctx, c))) return null;
+    if (!(await requirePlace(ctx, c))) return null;
     await ctx.answerCbQuery();
     // Eski tanlov qolib ketmasin — har chaqiruv toza varaqdan boshlanadi
     s.call = null;
@@ -557,7 +855,7 @@ function createRestaurantBot({ token, slug, name }) {
   // Ofitsiant tanlash ekranidan stol tanlashga qaytish
   bot.action('cw_change', async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     s.call = null;
     try {
       return await askTable(ctx, c);
@@ -568,7 +866,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action(/^cw_t_(.+)$/, async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     try {
       const db = await getTenantClient(slug);
       const tables = await waiterCalls.listTables(db);
@@ -586,7 +884,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // Aniq ofitsiant yoki "farqi yo'q" — ikkalasi ham shu yerga tushadi
   async function sendCall(ctx, waiterId) {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.call || !s.call.id) return askTable(ctx, c);
 
     try {
@@ -615,7 +913,7 @@ function createRestaurantBot({ token, slug, name }) {
       if (err.code === 'TABLE_NOT_FOUND') {
         return askTable(ctx, c);
       }
-      console.error(`   [bot:${slug}] chaqiruv yuborilmadi:`, err.message);
+      console.error(`   [bot] chaqiruv yuborilmadi:`, err.message);
       return show(ctx, errorText(c, err), Markup.inlineKeyboard([backRow(c)]));
     }
   }
@@ -634,8 +932,9 @@ function createRestaurantBot({ token, slug, name }) {
   // ============================================================
 
   bot.action('reserve', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!(await requireRegistration(ctx, c))) return null;
+    if (!(await requirePlace(ctx, c))) return null;
     await ctx.answerCbQuery();
     s.draft = { step: 'name' };
 
@@ -649,7 +948,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action('r_myname', async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft) return goHome(ctx);
     s.draft.clientName = ctx.from.first_name;
     return askPhone(ctx, c, ctx.from.first_name);
@@ -729,7 +1028,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action(/^r_party_(\d+)$/, async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft) return goHome(ctx);
     s.draft.partySize = Number(ctx.match[1]);
     s.draft.step = 'date';
@@ -738,7 +1037,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action('r_party_more', async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft) return goHome(ctx);
     s.draft.step = 'party_manual';
     return show(ctx, c.reserve.askPartyManual, Markup.inlineKeyboard([[Markup.button.callback(c.menu.cancel, 'home')]]));
@@ -746,7 +1045,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action(/^r_date_(\d+)$/, async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft) return goHome(ctx);
     const d = new Date();
     d.setDate(d.getDate() + Number(ctx.match[1]));
@@ -757,7 +1056,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action('r_date_other', async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft) return goHome(ctx);
     s.draft.step = 'date_manual';
     return show(ctx, c.reserve.askDateManual, Markup.inlineKeyboard([[Markup.button.callback(c.menu.cancel, 'home')]]));
@@ -765,14 +1064,14 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action(/^r_time_(\d+)_(\d+)$/, async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft || !s.draft.date) return goHome(ctx);
     return applyTime(ctx, c, s, Number(ctx.match[1]), Number(ctx.match[2]));
   });
 
   bot.action('r_time_other', async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!s.draft) return goHome(ctx);
     s.draft.step = 'time_manual';
     return show(ctx, c.reserve.askTimeManual, Markup.inlineKeyboard([[Markup.button.callback(c.menu.cancel, 'home')]]));
@@ -812,7 +1111,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   bot.action('r_confirm', async (ctx) => {
     await ctx.answerCbQuery();
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     const d = s.draft;
     if (!d || !d.when) return goHome(ctx);
 
@@ -848,7 +1147,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // ---------- Kontakt ulashildi ----------
   bot.on(message('contact'), async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     const contact = ctx.message.contact;
 
     // BEGONA KONTAKT. Telegram'da istalgan odamning kontaktini yuborish
@@ -871,7 +1170,7 @@ function createRestaurantBot({ token, slug, name }) {
 
     // Ro'yxatdan o'tkazamiz
     try {
-      s.customer = await botCustomers.register(slug, {
+      s.customer = await botCustomers.register({
         telegramId: ctx.from.id,
         phone: contact.phone_number,
         firstName: contact.first_name || ctx.from.first_name || null,
@@ -879,7 +1178,7 @@ function createRestaurantBot({ token, slug, name }) {
         lang: s.lang,
       });
     } catch (err) {
-      console.error(`   [bot:${slug}] ro'yxatga olinmadi: ${err.message}`);
+      console.error(`   [bot] ro'yxatga olinmadi: ${err.message}`);
       return ctx.reply(c.errors.generic, authKeyboard(c));
     }
 
@@ -891,7 +1190,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // ---------- Matnli javoblar ----------
   bot.on(message('text'), async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     const draft = s.draft;
     const text = (ctx.message.text || '').trim();
 
@@ -980,7 +1279,7 @@ function createRestaurantBot({ token, slug, name }) {
 
   // Boshqa turdagi xabarlar (rasm, stiker, ovoz) — jimgina menyuga qaytaramiz
   bot.on('message', async (ctx) => {
-    const { s, c } = ctxOf(ctx);
+    const { s, c, slug } = ctxOf(ctx);
     if (!(await currentCustomer(ctx))) return askRegistration(ctx, c);
     return ctx.reply(c.whatNext, mainMenu(c));
   });
@@ -988,7 +1287,7 @@ function createRestaurantBot({ token, slug, name }) {
   // Ushlanmagan har qanday xato: jurnalga yozamiz va mijozga bir og'iz aytamiz.
   // Bot HECH QACHON javobsiz qolmasligi kerak.
   bot.catch(async (err, ctx) => {
-    console.error(`   [bot:${slug}] xato:`, err && err.message);
+    console.error('   [bot] xato:', err && err.message);
     try {
       const s = session.get(ctx);
       const c = t(s.lang || 'uz');
@@ -1002,4 +1301,4 @@ function createRestaurantBot({ token, slug, name }) {
   return bot;
 }
 
-module.exports = { createRestaurantBot };
+module.exports = { createPlatformBot };

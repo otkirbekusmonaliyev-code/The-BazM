@@ -5,6 +5,9 @@
 const os = require('os');
 const { getBotUsername } = require('../bot/registry');
 
+// Bitta platforma boti registryda shu kalit bilan turadi
+const PLATFORM_KEY = '_platform';
+
 // ============================================================
 //  MANZILNI ANIQLASH
 // ============================================================
@@ -167,8 +170,12 @@ function resetUrlCache() {
 // jimgina veb-havolaga qaytamiz, aks holda QR umuman ishlamay qolardi.
 function tableUrl(slug, qrToken) {
   if ((process.env.QR_TARGET || 'web').toLowerCase() === 'telegram') {
-    const username = getBotUsername(slug);
-    if (username) return `https://t.me/${username}?start=t_${qrToken}`;
+    const username = getBotUsername(PLATFORM_KEY);
+    // Havolada SLUG ham bor. Avval har bir restoranga alohida bot
+    // to'g'ri kelardi va bot o'zi qaysi muassasa ekanini bilardi; endi
+    // bitta bot hammasiga xizmat qiladi va stol tokeni qaysi bazada
+    // izlanishini faqat havoladan bilish mumkin.
+    if (username) return `https://t.me/${username}?start=t_${slug}_${qrToken}`;
   }
   return `${appUrl()}/t/${slug}/${qrToken}`;
 }

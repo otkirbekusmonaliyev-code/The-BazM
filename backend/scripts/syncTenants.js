@@ -10,6 +10,11 @@ const masterPrisma = require('../src/config/masterDb');
 const { decrypt } = require('../src/utils/crypto');
 const { pushTenantSchema } = require('../src/services/provisioning');
 
+// Jadval olib tashlanganda Prisma so'roqsiz o'chirmaydi — va bu to'g'ri.
+// Ruxsat ATAYLAB alohida bayroq bilan beriladi, shunda tasodifan
+// ishlab ketmaydi.
+const ACCEPT_LOSS = process.argv.includes('--accept-data-loss');
+
 function parseArgs() {
   const args = process.argv.slice(2);
   const result = {};
@@ -35,7 +40,7 @@ async function main() {
     const password = decrypt(r.dbPasswordEncrypted);
     const url = `postgresql://${r.dbUser}:${encodeURIComponent(password)}@${r.dbHost}:${r.dbPort}/${r.dbName}`;
     console.log(`\n--- ${r.slug} (${r.dbName}) ---`);
-    pushTenantSchema(url);
+    pushTenantSchema(url, { acceptDataLoss: ACCEPT_LOSS });
   }
   console.log(`\n✔ ${restaurants.length} ta baza yangilandi\n`);
 }

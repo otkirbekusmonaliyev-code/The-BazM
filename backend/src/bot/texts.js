@@ -117,6 +117,45 @@ const uz = {
       'Ofitsiantga aytsangiz yangisini beradi.',
   },
 
+  // ---------- Joy tanlash ----------
+  //
+  // Bitta bot butun platformaga xizmat qiladi, shuning uchun mijoz avval
+  // "qaysi muassasa?" degan savolga javob beradi. Davlat so'ralmaydi —
+  // hozircha faqat O'zbekiston.
+  place: {
+    intro:
+      'Qaysi muassasa kerak?\n\n'
+      + 'Avval joyni tanlaymiz — shunda faqat siz boradigan yerdagi\n'
+      + 'restoran va kafelar ko\'rinadi.',
+    country: '🇺🇿  O‘zbekiston',
+    askRegion: 'Viloyatni tanlang:',
+    askCity: (region) => `${region}.\n\nShaharni tanlang:`,
+    askType: (place) => `${place}.\n\nRestoran kerakmi, kafemi?`,
+    restaurant: '🍽  Restoran',
+    cafe: '☕  Kafe',
+    askPlace: (n) => `Shu yerdagi muassasalar (${n} ta). Qaysi biri?`,
+
+    // Bo'sh holatlar. Har birida NIMA QILISH kerakligi aytiladi —
+    // "topilmadi" degan quruq javob odamni boshi berk ko'chada qoldiradi.
+    noRegions:
+      'Hozircha botga ulangan muassasa yo‘q 😔\n'
+      + 'Tez orada qo‘shiladi — birozdan keyin urinib ko‘ring.',
+    noPlaces: (type) =>
+      `Bu yerda hali ${type} yo‘q 😔\n`
+      + 'Boshqa shahar yoki turni tanlab ko‘ring.',
+
+    chosen: (name) => `✅ ${name} tanlandi.`,
+    change: '📍  Boshqa muassasa',
+    again: '🔁  Yana shu yerda',
+    backRegion: '⬅️  Viloyatlar',
+    backCity: '⬅️  Shaharlar',
+    // Tanlangan muassasa endi ishlamayapti (to'xtatilgan, o'chirilgan)
+    gone:
+      'Bu muassasa hozir xizmat ko‘rsatmayapti 😔\n'
+      + 'Boshqasini tanlang.',
+    needPlace: 'Avval muassasani tanlang.',
+  },
+
   // ---------- Ofitsiant chaqirish ----------
   call: {
     // 1-qadam: qaysi stol
@@ -284,6 +323,38 @@ const ru = {
     invalid:
       'Этот QR-код не работает — возможно, он устарел или от другого заведения.\n' +
       'Попросите официанта дать новый.',
+  },
+
+  // ---------- Выбор заведения ----------
+  place: {
+    intro:
+      'Какое заведение нужно?\n\n'
+      + 'Сначала выберем место — тогда покажем только те рестораны\n'
+      + 'и кафе, которые рядом с вами.',
+    country: '🇺🇿  Узбекистан',
+    askRegion: 'Выберите область:',
+    askCity: (region) => `${region}.\n\nВыберите город:`,
+    askType: (place) => `${place}.\n\nРесторан или кафе?`,
+    restaurant: '🍽  Ресторан',
+    cafe: '☕  Кафе',
+    askPlace: (n) => `Заведения здесь (${n}). Какое?`,
+
+    noRegions:
+      'Пока ни одно заведение не подключено 😔\n'
+      + 'Скоро появятся — попробуйте чуть позже.',
+    noPlaces: (type) =>
+      `Здесь пока нет таких заведений (${type}) 😔\n`
+      + 'Попробуйте другой город или тип.',
+
+    chosen: (name) => `✅ Выбрано: ${name}.`,
+    change: '📍  Другое заведение',
+    again: '🔁  Снова здесь',
+    backRegion: '⬅️  Области',
+    backCity: '⬅️  Города',
+    gone:
+      'Это заведение сейчас не обслуживает 😔\n'
+      + 'Выберите другое.',
+    needPlace: 'Сначала выберите заведение.',
   },
 
   // ---------- Вызов официанта ----------

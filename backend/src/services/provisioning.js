@@ -104,10 +104,15 @@ async function dropDatabase(dbName) {
 // Tenant sxemasini bazaga "push" qilish. Migratsiya fayllari o'rniga
 // `db push` ishlatiladi, chunki tenant bazalar bir xil shablondan
 // yaratiladi — ular uchun alohida migratsiya tarixi yuritish shart emas.
-function pushTenantSchema(connectionUrl) {
+// `acceptDataLoss` — faqat SINXRONLASH skriptidan beriladi (jadval olib
+// tashlanganda). Yangi muassasa yaratishda bu bayroq HECH QACHON
+// qo'yilmaydi: bo'sh bazada yo'qotadigan narsa yo'q, lekin odat bo'lib
+// qolsa, bir kun haqiqiy ma'lumot jimgina yo'qoladi.
+function pushTenantSchema(connectionUrl, { acceptDataLoss = false } = {}) {
+  const flag = acceptDataLoss ? ' --accept-data-loss' : '';
   // Windows'da `npx` — bu .cmd fayl. Node 22 uni to'g'ridan-to'g'ri
   // spawn qilolmaydi (EINVAL), shuning uchun shell orqali chaqiramiz.
-  execSync(`npx prisma db push --schema=${TENANT_SCHEMA} --skip-generate`, {
+  execSync(`npx prisma db push --schema=${TENANT_SCHEMA} --skip-generate${flag}`, {
     cwd: BACKEND_ROOT,
     env: { ...process.env, TENANT_DATABASE_URL: connectionUrl },
     stdio: 'inherit',
@@ -184,6 +189,10 @@ async function provisionRestaurant(input) {
         dbUser: cfg.user,
         dbPasswordEncrypted: encrypt(tenantDbPassword),
         businessType: input.businessType === 'cafe' ? 'cafe' : 'restaurant',
+        // Joylashuv botdagi qidiruv uchun kerak. Berilmasa `null` qoladi
+        // va muassasa botda ko'rinmaydi — super admin keyin to'ldiradi.
+        region: input.region || null,
+        city: input.city || null,
         subscriptionPlan: plan,
         subscriptionStatus: 'trial',
         monthlyFee: PLAN_PRICES[plan],
